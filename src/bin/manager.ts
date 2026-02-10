@@ -17,7 +17,7 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { loadConfig } from '../shared/config/index.js';
 import { createLogger } from '../shared/logging/index.js';
-import { ChromaDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 import { HuggingFaceEmbeddingService } from '../domains/embedding/index.js';
 import { CodebaseService } from '../domains/codebase/codebase.service.js';
 import { SearchService } from '../domains/search/search.service.js';
@@ -86,15 +86,12 @@ async function main() {
       schemaVersion: config.schemaVersion,
     });
 
-    // Initialize ChromaDB client
-    mainLogger.info('Initializing ChromaDB client', {
-      persistPath: config.chromadb.persistPath,
+    // Initialize LanceDB client
+    mainLogger.info('Initializing LanceDB client', {
+      persistPath: config.lancedb.persistPath,
     });
-    const chromaClient = new ChromaDBClientWrapper(config);
-    await chromaClient.initialize();
-
-    // Check schema versions of existing collections
-    await chromaClient.checkAllSchemaVersions();
+    const lanceClient = new LanceDBClientWrapper(config);
+    await lanceClient.initialize();
 
     // Initialize embedding service
     mainLogger.info('Initializing embedding service', {
@@ -105,12 +102,12 @@ async function main() {
 
     // Initialize codebase service
     mainLogger.info('Initializing codebase service');
-    const codebaseService = new CodebaseService(chromaClient, config);
+    const codebaseService = new CodebaseService(lanceClient, config);
 
     // Initialize search service
     mainLogger.info('Initializing search service');
     const searchService = new SearchService(
-      chromaClient,
+      lanceClient,
       embeddingService,
       config
     );

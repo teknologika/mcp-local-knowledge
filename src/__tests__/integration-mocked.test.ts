@@ -1,8 +1,8 @@
 /**
- * Integration tests with mocked ChromaDB
+ * Integration tests with mocked LanceDB
  * 
  * Tests end-to-end workflows without requiring external dependencies.
- * For full end-to-end tests with real ChromaDB, see integration-e2e.test.ts
+ * For full end-to-end tests with real LanceDB, see integration-e2e.test.ts
  * 
  * Tests:
  * - Complete ingestion workflow (scan → parse → embed → store → verify)

@@ -5,7 +5,7 @@
  * - File scanning
  * - Parsing with Tree-sitter
  * - Embedding generation
- * - Storage in ChromaDB
+ * - Storage in LanceDB
  * 
  * Handles re-ingestion by deleting existing chunks before storing new ones.
  * Processes files in batches for memory efficiency.
@@ -17,7 +17,7 @@ import type { Config, IngestionParams, IngestionStats, LanguageStats, Chunk } fr
 import { FileScannerService, type ScannedFile } from './file-scanner.service.js';
 import { TreeSitterParsingService } from '../parsing/tree-sitter-parsing.service.js';
 import type { EmbeddingService } from '../embedding/embedding.service.js';
-import { ChromaDBClientWrapper } from '../../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../../infrastructure/lancedb/lancedb.client.js';
 import { createLogger, startTimer, logMemoryUsage } from '../../shared/logging/index.js';
 import type { Logger } from '../../shared/logging/logger.js';
 
@@ -46,19 +46,19 @@ export class IngestionService {
   private fileScanner: FileScannerService;
   private parser: TreeSitterParsingService;
   private embeddingService: EmbeddingService;
-  private chromaClient: ChromaDBClientWrapper;
+  private lanceClient: LanceDBClientWrapper;
   private config: Config;
   private logger: Logger;
 
   constructor(
     embeddingService: EmbeddingService,
-    chromaClient: ChromaDBClientWrapper,
+    lanceClient: LanceDBClientWrapper,
     config: Config
   ) {
     this.fileScanner = new FileScannerService();
     this.parser = new TreeSitterParsingService();
     this.embeddingService = embeddingService;
-    this.chromaClient = chromaClient;
+    this.lanceClient = lanceClient;
     this.config = config;
     this.logger = rootLogger.child('IngestionService');
   }
@@ -205,8 +205,8 @@ export class IngestionService {
       // Log memory after embeddings
       logMemoryUsage(this.logger, { phase: 'afterEmbeddings', codebaseName, chunkCount: chunksWithEmbeddings.length });
 
-      // Phase 5: Store in ChromaDB
-      this.logger.info('Phase 4: Storing chunks in ChromaDB', {
+      // Phase 5: Store in LanceDB
+      this.logger.info('Phase 4: Storing chunks in LanceDB', {
         chunkCount: chunksWithEmbeddings.length,
       });
 
@@ -271,7 +271,7 @@ export class IngestionService {
    */
   private async handleReingestion(codebaseName: string): Promise<number> {
     try {
-      const exists = await this.chromaClient.collectionExists(codebaseName);
+      const exists = await this.lanceClient.tableExists(codebaseName);
       
       if (!exists) {
         this.logger.info('First-time ingestion, no existing chunks to delete', {
@@ -285,15 +285,11 @@ export class IngestionService {
       });
 
       // Get current chunk count before deletion
-      const collectionName = ChromaDBClientWrapper.getCollectionName(codebaseName);
-      const col = await this.chromaClient.getClient().getCollection({
-        name: collectionName,
-        embeddingFunction: this.chromaClient.getEmbeddingFunction(),
-      });
-      const previousCount = await col.count();
+      const table = await this.lanceClient.getOrCreateTable(codebaseName);
+      const previousCount = await table.countRows();
 
-      // Delete the collection
-      await this.chromaClient.deleteCollection(codebaseName);
+      // Delete the table
+      await this.lanceClient.deleteTable(codebaseName);
 
       this.logger.info('Existing chunks deleted', {
         codebaseName,
@@ -369,15 +365,15 @@ export class IngestionService {
   }
 
   /**
-   * Store chunks in ChromaDB
+   * Store chunks in LanceDB
    */
   private async storeChunks(
     codebaseName: string,
     codebasePath: string,
     chunks: Array<Chunk & { embedding: number[] }>,
     ingestionTimestamp: string,
-    languageStats: Map<string, { fileCount: number; chunkCount: number }>,
-    fileCount: number,
+    _languageStats: Map<string, { fileCount: number; chunkCount: number }>,
+    _fileCount: number,
     progressCallback?: ProgressCallback
   ): Promise<void> {
     if (chunks.length === 0) {
@@ -385,19 +381,8 @@ export class IngestionService {
       return;
     }
 
-    // Create or get collection
-    await this.chromaClient.getOrCreateCollection(codebaseName, {
-      path: codebasePath,
-      fileCount,
-      lastIngestion: ingestionTimestamp,
-      languages: Array.from(languageStats.keys()),
-    });
-
-    const collectionName = ChromaDBClientWrapper.getCollectionName(codebaseName);
-    const col = await this.chromaClient.getClient().getCollection({
-      name: collectionName,
-      embeddingFunction: this.chromaClient.getEmbeddingFunction(),
-    });
+    // Get or create table
+    const table = await this.lanceClient.getOrCreateTable(codebaseName);
 
     // Store chunks in batches
     const batchSize = this.config.ingestion.batchSize;
@@ -406,26 +391,24 @@ export class IngestionService {
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
 
-      const ids = batch.map((_, idx) => `${codebaseName}_${ingestionTimestamp}_${i + idx}`);
-      const embeddings = batch.map((chunk) => chunk.embedding);
-      const documents = batch.map((chunk) => chunk.content);
-      const metadatas = batch.map((chunk) => ({
-        codebaseName,
+      // Transform chunks to LanceDB row format
+      const rows = batch.map((chunk, idx) => ({
+        id: `${codebaseName}_${ingestionTimestamp}_${i + idx}`,
+        vector: chunk.embedding,
+        content: chunk.content,
         filePath: chunk.filePath,
         startLine: chunk.startLine,
         endLine: chunk.endLine,
         language: chunk.language,
         chunkType: chunk.chunkType,
         ingestionTimestamp,
+        _codebaseName: codebaseName,
+        _path: codebasePath,
+        _lastIngestion: ingestionTimestamp,
       }));
 
       try {
-        await col.add({
-          ids,
-          embeddings,
-          documents,
-          metadatas,
-        });
+        await table.add(rows);
 
         storedCount += batch.length;
         progressCallback?.('Storing chunks', storedCount, chunks.length);

@@ -120,7 +120,7 @@ const configSchema: JSONSchemaType<Config> = {
     schemaVersion: { type: 'string', minLength: 1 },
   },
   required: [
-    'chromadb',
+    'lancedb',
     'embedding',
     'server',
     'mcp',
@@ -220,9 +220,9 @@ function loadConfigFromEnv(): Partial<Config> {
   const env = process.env;
   const config: Partial<Config> = {};
 
-  // ChromaDB configuration
-  if (env.CHROMADB_PERSIST_PATH) {
-    config.chromadb = { persistPath: env.CHROMADB_PERSIST_PATH };
+  // LanceDB configuration
+  if (env.LANCEDB_PERSIST_PATH) {
+    config.lancedb = { persistPath: env.LANCEDB_PERSIST_PATH };
   }
 
   // Embedding configuration
@@ -279,8 +279,8 @@ function loadConfigFromEnv(): Partial<Config> {
 function expandConfigPaths(config: Config): Config {
   return {
     ...config,
-    chromadb: {
-      persistPath: expandPath(config.chromadb.persistPath),
+    lancedb: {
+      persistPath: expandPath(config.lancedb.persistPath),
     },
     embedding: {
       ...config.embedding,

@@ -18,7 +18,7 @@ import { loadConfig } from '../shared/config/config.js';
 import { createLogger } from '../shared/logging/logger.js';
 import { IngestionService } from '../domains/ingestion/ingestion.service.js';
 import { createEmbeddingService } from '../domains/embedding/embedding.service.js';
-import { ChromaDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 
 /**
  * Format duration in seconds
@@ -93,15 +93,15 @@ async function main() {
     // Initialize services
     logger.info('Initializing services...');
 
-    const chromaClient = new ChromaDBClientWrapper(config);
-    await chromaClient.initialize();
+    const lanceClient = new LanceDBClientWrapper(config);
+    await lanceClient.initialize();
 
     const embeddingService = createEmbeddingService(config, logger);
     await embeddingService.initialize();
 
     const ingestionService = new IngestionService(
       embeddingService,
-      chromaClient,
+      lanceClient,
       config
     );
 

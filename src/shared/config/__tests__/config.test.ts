@@ -97,7 +97,7 @@ describe('Configuration Management', () => {
     });
 
     it('should load all environment variables correctly', () => {
-      process.env.CHROMADB_PERSIST_PATH = '/custom/chromadb';
+      process.env.LANCEDB_PERSIST_PATH = '/custom/lancedb';
       process.env.EMBEDDING_MODEL_NAME = 'custom-model';
       process.env.EMBEDDING_CACHE_PATH = '/custom/cache';
       process.env.SERVER_PORT = '7777';
@@ -110,7 +110,7 @@ describe('Configuration Management', () => {
 
       const config = loadConfig();
 
-      expect(config.chromadb.persistPath).toBe('/custom/chromadb');
+      expect(config.lancedb.persistPath).toBe('/custom/lancedb');
       expect(config.embedding.modelName).toBe('custom-model');
       expect(config.embedding.cachePath).toBe('/custom/cache');
       expect(config.server.port).toBe(7777);
@@ -124,8 +124,8 @@ describe('Configuration Management', () => {
 
     it('should expand tilde in paths', () => {
       const fileConfig: Partial<Config> = {
-        chromadb: {
-          persistPath: '~/custom/chromadb',
+        lancedb: {
+          persistPath: '~/custom/lancedb',
         },
         embedding: {
           modelName: 'test-model',
@@ -136,9 +136,9 @@ describe('Configuration Management', () => {
       writeFileSync(testConfigPath, JSON.stringify(fileConfig, null, 2));
       const config = loadConfig(testConfigPath);
 
-      expect(config.chromadb.persistPath).not.toContain('~');
+      expect(config.lancedb.persistPath).not.toContain('~');
       expect(config.embedding.cachePath).not.toContain('~');
-      expect(config.chromadb.persistPath).toContain('custom/chromadb');
+      expect(config.lancedb.persistPath).toContain('custom/lancedb');
       expect(config.embedding.cachePath).toContain('custom/cache');
     });
 
@@ -199,7 +199,7 @@ describe('Configuration Management', () => {
 
     it('should use defaults for missing fields in config file', () => {
       const partialConfig = {
-        chromadb: {
+        lancedb: {
           persistPath: '/custom/path',
         },
         // Missing other fields - should use defaults
@@ -210,7 +210,7 @@ describe('Configuration Management', () => {
       const config = loadConfig(testConfigPath);
       
       // Custom value from file
-      expect(config.chromadb.persistPath).toBe('/custom/path');
+      expect(config.lancedb.persistPath).toBe('/custom/path');
       
       // Defaults for missing fields
       expect(config.embedding).toEqual(DEFAULT_CONFIG.embedding);
@@ -339,7 +339,7 @@ describe('Configuration Management', () => {
     });
 
     it('should have valid paths', () => {
-      expect(DEFAULT_CONFIG.chromadb.persistPath).toContain('.codebase-memory');
+      expect(DEFAULT_CONFIG.lancedb.persistPath).toContain('.codebase-memory');
       expect(DEFAULT_CONFIG.embedding.cachePath).toContain('.codebase-memory');
     });
   });

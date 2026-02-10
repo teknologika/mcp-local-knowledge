@@ -26,8 +26,8 @@ describe('HuggingFaceEmbeddingService', () => {
 
     // Create test config
     config = {
-      chromadb: {
-        persistPath: '/tmp/test-chromadb',
+      lancedb: {
+        persistPath: '/tmp/test-lancedb',
       },
       embedding: {
         modelName: 'Xenova/all-MiniLM-L6-v2',

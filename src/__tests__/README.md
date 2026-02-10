@@ -5,7 +5,7 @@ This directory contains integration tests for the codebase memory MCP server.
 ## Test Files
 
 ### `integration-mocked.test.ts`
-Integration tests that use mocked ChromaDB and can run without external dependencies.
+Integration tests that use mocked LanceDB and can run without external dependencies.
 
 **Tests:**
 - File scanning and parsing workflow
@@ -21,18 +21,11 @@ npm test -- src/__tests__/integration-mocked.test.ts
 ```
 
 ### `integration-e2e.test.ts.skip`
-Full end-to-end integration tests that require a running ChromaDB instance.
+Full end-to-end integration tests that use real LanceDB.
 
 **Prerequisites:**
-1. Start ChromaDB server:
-   ```bash
-   docker run -p 8000:8000 chromadb/chroma
-   ```
-   Or install and run ChromaDB locally:
-   ```bash
-   pip install chromadb
-   chroma run --path ./chroma_data
-   ```
+1. LanceDB is file-based and requires no external server
+2. Tests will create temporary LanceDB databases automatically
 
 2. Rename the file to remove `.skip` extension:
    ```bash
@@ -59,12 +52,10 @@ To run the mocked integration tests (no external dependencies):
 npm test -- src/__tests__/integration-mocked.test.ts
 ```
 
-To run all tests including E2E (requires ChromaDB):
+To run all tests including E2E:
 ```bash
-# Start ChromaDB first
-docker run -p 8000:8000 chromadb/chroma
-
-# In another terminal
+# No external dependencies needed - LanceDB is file-based
+npm test -- integration-e2e.test.ts
 mv src/__tests__/integration-e2e.test.ts.skip src/__tests__/integration-e2e.test.ts
 npm test -- src/__tests__/
 ```

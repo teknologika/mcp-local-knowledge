@@ -9,7 +9,7 @@ import type {
   SearchResult,
   Config 
 } from '../../shared/types/index.js';
-import { ChromaDBClientWrapper } from '../../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../../infrastructure/lancedb/lancedb.client.js';
 import type { EmbeddingService } from '../embedding/embedding.service.js';
 import { createLogger, startTimer } from '../../shared/logging/index.js';
 
@@ -39,17 +39,17 @@ interface CacheEntry {
  * Service for semantic code search
  */
 export class SearchService {
-  private chromaClient: ChromaDBClientWrapper;
+  private lanceClient: LanceDBClientWrapper;
   private embeddingService: EmbeddingService;
   private config: Config;
   private cache: Map<string, CacheEntry> = new Map();
 
   constructor(
-    chromaClient: ChromaDBClientWrapper,
+    lanceClient: LanceDBClientWrapper,
     embeddingService: EmbeddingService,
     config: Config
   ) {
-    this.chromaClient = chromaClient;
+    this.lanceClient = lanceClient;
     this.embeddingService = embeddingService;
     this.config = config;
   }
@@ -143,11 +143,11 @@ export class SearchService {
       const queryEmbedding = await this.embeddingService.generateEmbedding(params.query);
       embeddingTimer.end();
 
-      // Determine which collections to search
-      const collections = await this.getCollectionsToSearch(params.codebaseName);
+      // Determine which tables to search
+      const tables = await this.getTablesToSearch(params.codebaseName);
 
-      if (collections.length === 0) {
-        logger.warn('No collections found to search', {
+      if (tables.length === 0) {
+        logger.warn('No tables found to search', {
           codebaseName: params.codebaseName,
         });
         const queryTime = timer.end();
@@ -159,69 +159,48 @@ export class SearchService {
         return emptyResults;
       }
 
-      // Search all relevant collections
+      // Search all relevant tables
       const allResults: SearchResult[] = [];
       const maxResults = params.maxResults || this.config.search.defaultMaxResults;
 
-      for (const collectionName of collections) {
-        const collectionTimer = startTimer('searchCollection', logger, { collectionName });
+      for (const tableName of tables) {
+        const tableTimer = startTimer('searchTable', logger, { tableName });
         try {
-          const col = await this.chromaClient.getClient().getCollection({
-            name: collectionName,
-            embeddingFunction: this.chromaClient.getEmbeddingFunction(),
-          });
+          const table = await this.lanceClient.getOrCreateTable(tableName);
 
-          // Build where clause for metadata filters
-          const where: Record<string, any> = {};
+          // Perform vector search
+          let query = table.search(queryEmbedding).limit(maxResults);
+
+          // Add metadata filters if specified
           if (params.language) {
-            where.language = params.language;
+            query = query.where(`language = '${params.language}'`);
           }
 
-          // Query ChromaDB with vector similarity
-          const queryResults = await col.query({
-            queryEmbeddings: [queryEmbedding],
-            nResults: maxResults,
-            where: Object.keys(where).length > 0 ? where : undefined,
-            include: ['metadatas' as any, 'documents' as any, 'distances' as any],
-          });
+          const searchResults = await query.toArray();
 
           // Process results
-          if (queryResults.ids[0] && queryResults.ids[0].length > 0) {
-            for (let i = 0; i < queryResults.ids[0].length; i++) {
-              const metadata = queryResults.metadatas[0]?.[i];
-              const document = queryResults.documents[0]?.[i];
-              const distance = queryResults.distances?.[0]?.[i];
+          for (const row of searchResults) {
+            const result: SearchResult = {
+              filePath: row.filePath || '',
+              startLine: row.startLine || 0,
+              endLine: row.endLine || 0,
+              language: row.language || '',
+              chunkType: row.chunkType || '',
+              content: row.content || '',
+              similarityScore: row._distance !== undefined ? 1 - row._distance : 0,
+              codebaseName: row._codebaseName || tableName,
+            };
 
-              if (!metadata || !document) {
-                continue;
-              }
-
-              // Convert distance to similarity score (1 - distance for cosine distance)
-              // ChromaDB uses L2 distance by default, but with normalized vectors it's similar to cosine
-              const similarityScore = distance !== undefined ? 1 - distance : 0;
-
-              const result: SearchResult = {
-                filePath: (metadata.filePath as string) || '',
-                startLine: (metadata.startLine as number) || 0,
-                endLine: (metadata.endLine as number) || 0,
-                language: (metadata.language as string) || '',
-                chunkType: (metadata.chunkType as string) || '',
-                content: document,
-                similarityScore,
-                codebaseName: (metadata.codebaseName as string) || '',
-              };
-
-              allResults.push(result);
-            }
+            allResults.push(result);
           }
-          collectionTimer.end();
+          tableTimer.end();
         } catch (error) {
-          collectionTimer.end();
-          logger.warn('Failed to search collection', {
-            collectionName,
+          tableTimer.end();
+          logger.warn('Failed to search table', {
+            tableName,
             error: error instanceof Error ? error.message : String(error),
           });
-          // Continue with other collections
+          // Continue with other tables
         }
       }
 
@@ -249,15 +228,11 @@ export class SearchService {
 
       return results;
     } catch (error) {
-      timer.end();
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(
         'Search failed',
         error instanceof Error ? error : new Error(errorMessage),
-        {
-          query: params.query.substring(0, 100),
-          codebaseName: params.codebaseName,
-        }
+        { query: params.query.substring(0, 100) }
       );
       throw new SearchError(
         `Search failed: ${errorMessage}`,
@@ -267,27 +242,27 @@ export class SearchService {
   }
 
   /**
-   * Get list of collection names to search based on codebase filter
+   * Get list of tables to search based on codebase filter
    */
-  private async getCollectionsToSearch(codebaseName?: string): Promise<string[]> {
+  private async getTablesToSearch(codebaseName?: string): Promise<string[]> {
     if (codebaseName) {
       // Search specific codebase
-      const collectionName = ChromaDBClientWrapper.getCollectionName(codebaseName);
-      const exists = await this.chromaClient.collectionExists(codebaseName);
+      const tableName = LanceDBClientWrapper.getTableName(codebaseName);
+      const exists = await this.lanceClient.tableExists(codebaseName);
       
       if (!exists) {
-        logger.warn('Codebase collection not found', { codebaseName });
+        logger.warn('Codebase table not found', { codebaseName, tableName });
         return [];
       }
-      
-      return [collectionName];
-    } else {
-      // Search all codebases
-      const collections = await this.chromaClient.listCollections();
-      return collections
-        .filter(c => c.metadata?.codebaseName)
-        .map(c => c.name);
+
+      return [tableName];
     }
+
+    // Search all codebases
+    const tables = await this.lanceClient.listTables();
+    return tables
+      .filter(t => t.metadata?.codebaseName)
+      .map(t => t.name);
   }
 
   /**
@@ -302,10 +277,10 @@ export class SearchService {
   /**
    * Get cache statistics
    */
-  getCacheStats(): { size: number; entries: number } {
+  getCacheStats(): { size: number; keys: string[] } {
     return {
       size: this.cache.size,
-      entries: this.cache.size,
+      keys: Array.from(this.cache.keys()),
     };
   }
 }

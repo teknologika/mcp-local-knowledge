@@ -23,7 +23,7 @@ import { createEmbeddingService, type EmbeddingService } from '../domains/embedd
 import { TreeSitterParsingService } from '../domains/parsing/tree-sitter-parsing.service.js';
 import { CodebaseService } from '../domains/codebase/codebase.service.js';
 import { SearchService } from '../domains/search/search.service.js';
-import { ChromaDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 import { registerRoutes } from '../infrastructure/fastify/routes.js';
 import { MCPServer } from '../infrastructure/mcp/mcp-server.js';
 import { createLogger } from '../shared/logging/logger.js';
@@ -31,9 +31,9 @@ import type { Config } from '../shared/types/index.js';
 
 describe('Integration Tests', () => {
   let testDir: string;
-  let chromaDir: string;
+  let lanceDir: string;
   let testConfig: Config;
-  let chromaClient: ChromaDBClientWrapper;
+  let lanceClient: LanceDBClientWrapper;
   let embeddingService: EmbeddingService;
   let parsingService: TreeSitterParsingService;
   let ingestionService: IngestionService;
@@ -43,15 +43,15 @@ describe('Integration Tests', () => {
   beforeAll(async () => {
     // Create temporary directories for testing
     testDir = join(tmpdir(), `codebase-memory-test-${Date.now()}`);
-    chromaDir = join(testDir, 'chromadb');
+    lanceDir = join(testDir, 'lancedb');
     mkdirSync(testDir, { recursive: true });
-    mkdirSync(chromaDir, { recursive: true });
+    mkdirSync(lanceDir, { recursive: true });
 
     // Create test configuration
     testConfig = {
       ...DEFAULT_CONFIG,
-      chromadb: {
-        persistPath: chromaDir,
+      lancedb: {
+        persistPath: lanceDir,
       },
       server: {
         port: 8009, // Use different port to avoid conflicts
@@ -65,9 +65,9 @@ describe('Integration Tests', () => {
     // Create logger
     const logger = createLogger(testConfig.logging.level);
 
-    // Initialize ChromaDB client wrapper
-    chromaClient = new ChromaDBClientWrapper(testConfig);
-    await chromaClient.initialize();
+    // Initialize LanceDB client wrapper
+    lanceClient = new LanceDBClientWrapper(testConfig);
+    await lanceClient.initialize();
 
     // Initialize embedding service
     embeddingService = createEmbeddingService(testConfig, logger);
@@ -79,13 +79,13 @@ describe('Integration Tests', () => {
     // Initialize ingestion service
     ingestionService = new IngestionService(
       embeddingService,
-      chromaClient,
+      lanceClient,
       testConfig
     );
 
     // Initialize codebase and search services
-    codebaseService = new CodebaseService(chromaClient, testConfig);
-    searchService = new SearchService(chromaClient, embeddingService, testConfig);
+    codebaseService = new CodebaseService(lanceClient, testConfig);
+    searchService = new SearchService(lanceClient, embeddingService, testConfig);
   }, 60000); // Increase timeout for model loading
 
   afterAll(async () => {
@@ -111,7 +111,7 @@ describe('Integration Tests', () => {
         rmSync(testCodebasePath, { recursive: true, force: true });
       }
 
-      // Clean up ChromaDB collection
+      // Clean up LanceDB table
       try {
         await codebaseService.deleteCodebase(codebaseName);
       } catch (error) {
@@ -682,10 +682,10 @@ export function addedFunction(): void {
       await fastify2.close();
     });
 
-    it('should handle ChromaDB shared access', async () => {
-      // Multiple services can share the same ChromaDB instance
-      const service1 = new CodebaseService(chromaClient, testConfig);
-      const service2 = new CodebaseService(chromaClient, testConfig);
+    it('should handle LanceDB shared access', async () => {
+      // Multiple services can share the same LanceDB instance
+      const service1 = new CodebaseService(lanceClient, testConfig);
+      const service2 = new CodebaseService(lanceClient, testConfig);
 
       const codebases1 = await service1.listCodebases();
       const codebases2 = await service2.listCodebases();

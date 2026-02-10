@@ -4,46 +4,43 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CodebaseService, CodebaseError } from '../codebase.service.js';
-import { ChromaDBClientWrapper } from '../../../infrastructure/chromadb/chromadb.client.js';
+import { LanceDBClientWrapper } from '../../../infrastructure/lancedb/lancedb.client.js';
 import type { Config } from '../../../shared/types/index.js';
 import { DEFAULT_CONFIG } from '../../../shared/config/config.js';
 
 describe('CodebaseService', () => {
   let service: CodebaseService;
-  let mockChromaClient: ChromaDBClientWrapper;
+  let mockLanceClient: LanceDBClientWrapper;
   let config: Config;
 
   beforeEach(() => {
     config = { ...DEFAULT_CONFIG };
     
-    // Create mock ChromaDB client
-    mockChromaClient = {
-      listCollections: vi.fn(),
-      getClient: vi.fn(),
-      getCollectionMetadata: vi.fn(),
-      createCollection: vi.fn(),
-      deleteCollection: vi.fn(),
-      collectionExists: vi.fn(),
+    // Create mock LanceDB client
+    mockLanceClient = {
+      listTables: vi.fn(),
+      getOrCreateTable: vi.fn(),
+      tableExists: vi.fn(),
+      deleteTable: vi.fn(),
     } as any;
 
-    service = new CodebaseService(mockChromaClient, config);
+    service = new CodebaseService(mockLanceClient, config);
   });
 
   describe('listCodebases', () => {
-    it('should return empty array when no collections exist', async () => {
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([]);
+    it('should return empty array when no tables exist', async () => {
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([]);
 
       const result = await service.listCodebases();
 
       expect(result).toEqual([]);
-      expect(mockChromaClient.listCollections).toHaveBeenCalledOnce();
+      expect(mockLanceClient.listTables).toHaveBeenCalledOnce();
     });
 
     it('should return codebases with metadata', async () => {
-      const mockCollections = [
+      const mockTables = [
         {
           name: 'codebase_test-project_1_0_0',
-          id: 'col1',
           metadata: {
             codebaseName: 'test-project',
             path: '/path/to/project',
@@ -54,14 +51,38 @@ describe('CodebaseService', () => {
         },
       ];
 
-      const mockCollection = {
-        count: vi.fn().mockResolvedValue(50),
+      const mockTable = {
+        countRows: vi.fn().mockResolvedValue(50),
+        query: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([
+              {
+                _path: '/path/to/project',
+                _lastIngestion: '2024-01-01T00:00:00Z',
+                language: 'typescript',
+                filePath: '/path/to/file1.ts',
+              },
+            ]),
+          }),
+          select: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([
+              { language: 'typescript', filePath: '/path/to/file1.ts' },
+              { language: 'typescript', filePath: '/path/to/file2.ts' },
+              { language: 'javascript', filePath: '/path/to/file3.js' },
+              { language: 'javascript', filePath: '/path/to/file4.js' },
+              { language: 'javascript', filePath: '/path/to/file5.js' },
+              { language: 'javascript', filePath: '/path/to/file6.js' },
+              { language: 'javascript', filePath: '/path/to/file7.js' },
+              { language: 'javascript', filePath: '/path/to/file8.js' },
+              { language: 'javascript', filePath: '/path/to/file9.js' },
+              { language: 'javascript', filePath: '/path/to/file10.js' },
+            ]),
+          }),
+        }),
       };
 
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue(mockCollections);
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue(mockTables);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const result = await service.listCodebases();
 
@@ -76,16 +97,15 @@ describe('CodebaseService', () => {
       });
     });
 
-    it('should skip collections without codebaseName metadata', async () => {
-      const mockCollections = [
+    it('should skip tables without codebaseName metadata', async () => {
+      const mockTables = [
         {
-          name: 'some-other-collection',
-          id: 'col1',
+          name: 'some-other-table',
           metadata: {},
         },
       ];
 
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue(mockCollections);
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue(mockTables);
 
       const result = await service.listCodebases();
 
@@ -93,7 +113,7 @@ describe('CodebaseService', () => {
     });
 
     it('should throw CodebaseError on failure', async () => {
-      vi.mocked(mockChromaClient.listCollections).mockRejectedValue(
+      vi.mocked(mockLanceClient.listTables).mockRejectedValue(
         new Error('Connection failed')
       );
 
@@ -103,16 +123,16 @@ describe('CodebaseService', () => {
   });
 
   describe('deleteCodebase', () => {
-    it('should delete codebase collection', async () => {
-      vi.mocked(mockChromaClient.deleteCollection).mockResolvedValue();
+    it('should delete codebase table', async () => {
+      vi.mocked(mockLanceClient.deleteTable).mockResolvedValue();
 
       await service.deleteCodebase('test-project');
 
-      expect(mockChromaClient.deleteCollection).toHaveBeenCalledWith('test-project');
+      expect(mockLanceClient.deleteTable).toHaveBeenCalledWith('test-project');
     });
 
     it('should throw CodebaseError on deletion failure', async () => {
-      vi.mocked(mockChromaClient.deleteCollection).mockRejectedValue(
+      vi.mocked(mockLanceClient.deleteTable).mockRejectedValue(
         new Error('Delete failed')
       );
 
@@ -122,47 +142,39 @@ describe('CodebaseService', () => {
 
   describe('deleteChunkSet', () => {
     it('should delete chunks with specific timestamp', async () => {
-      const mockCollection = {
-        get: vi.fn().mockResolvedValue({
-          ids: ['id1', 'id2', 'id3'],
-          metadatas: [{}, {}, {}],
+      const mockTable = {
+        query: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([{}, {}, {}]), // 3 chunks
+          }),
         }),
-        delete: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(3),
       };
 
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const result = await service.deleteChunkSet('test-project', '2024-01-01T00:00:00Z');
 
       expect(result).toBe(3);
-      expect(mockCollection.get).toHaveBeenCalledWith({
-        where: { ingestionTimestamp: '2024-01-01T00:00:00Z' },
-        include: ['metadatas'],
-      });
-      expect(mockCollection.delete).toHaveBeenCalledWith({
-        where: { ingestionTimestamp: '2024-01-01T00:00:00Z' },
-      });
+      expect(mockTable.delete).toHaveBeenCalledWith("ingestionTimestamp = '2024-01-01T00:00:00Z'");
     });
 
     it('should return 0 when no chunks found', async () => {
-      const mockCollection = {
-        get: vi.fn().mockResolvedValue({
-          ids: [],
-          metadatas: [],
+      const mockTable = {
+        query: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([]), // No chunks
+          }),
         }),
         delete: vi.fn(),
       };
 
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const result = await service.deleteChunkSet('test-project', '2024-01-01T00:00:00Z');
 
       expect(result).toBe(0);
-      expect(mockCollection.delete).not.toHaveBeenCalled();
+      expect(mockTable.delete).not.toHaveBeenCalled();
     });
   });
 });

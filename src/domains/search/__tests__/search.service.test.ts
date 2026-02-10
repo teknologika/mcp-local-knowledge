@@ -4,14 +4,14 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SearchService, SearchError } from '../search.service.js';
-import { ChromaDBClientWrapper } from '../../../infrastructure/chromadb/chromadb.client.js';
+import { LanceDBClientWrapper } from '../../../infrastructure/lancedb/lancedb.client.js';
 import type { EmbeddingService } from '../../embedding/embedding.service.js';
 import type { Config, SearchParams } from '../../../shared/types/index.js';
 import { DEFAULT_CONFIG } from '../../../shared/config/config.js';
 
 describe('SearchService', () => {
   let service: SearchService;
-  let mockChromaClient: ChromaDBClientWrapper;
+  let mockLanceClient: LanceDBClientWrapper;
   let mockEmbeddingService: EmbeddingService;
   let config: Config;
 
@@ -28,19 +28,19 @@ describe('SearchService', () => {
       isInitialized: vi.fn().mockReturnValue(true),
     };
 
-    // Create mock ChromaDB client
-    mockChromaClient = {
-      listCollections: vi.fn(),
-      getClient: vi.fn(),
-      collectionExists: vi.fn(),
+    // Create mock LanceDB client
+    mockLanceClient = {
+      listTables: vi.fn(),
+      getOrCreateTable: vi.fn(),
+      tableExists: vi.fn(),
     } as any;
 
-    service = new SearchService(mockChromaClient, mockEmbeddingService, config);
+    service = new SearchService(mockLanceClient, mockEmbeddingService, config);
   });
 
   describe('search', () => {
     it('should return empty results when no collections exist', async () => {
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([]);
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([]);
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(
         new Array(384).fill(0)
       );
@@ -59,43 +59,45 @@ describe('SearchService', () => {
     it('should search and return ranked results', async () => {
       const mockQueryEmbedding = new Array(384).fill(0.1);
       
-      const mockCollection = {
-        query: vi.fn().mockResolvedValue({
-          ids: [['id1', 'id2']],
-          metadatas: [[
-            {
-              filePath: '/path/to/file1.ts',
-              startLine: 10,
-              endLine: 20,
-              language: 'typescript',
-              chunkType: 'function',
-              codebaseName: 'test-project',
-            },
-            {
-              filePath: '/path/to/file2.ts',
-              startLine: 30,
-              endLine: 40,
-              language: 'typescript',
-              chunkType: 'class',
-              codebaseName: 'test-project',
-            },
-          ]],
-          documents: [['function test() {}', 'class Test {}']],
-          distances: [[0.2, 0.5]],
+      const mockTable = {
+        search: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              toArray: vi.fn().mockResolvedValue([
+                {
+                  filePath: '/path/to/file1.ts',
+                  startLine: 10,
+                  endLine: 20,
+                  language: 'typescript',
+                  chunkType: 'function',
+                  content: 'function test() {}',
+                  _distance: 0.2,
+                  _codebaseName: 'test-project',
+                },
+                {
+                  filePath: '/path/to/file2.ts',
+                  startLine: 30,
+                  endLine: 40,
+                  language: 'typescript',
+                  chunkType: 'class',
+                  content: 'class Test {}',
+                  _distance: 0.5,
+                  _codebaseName: 'test-project',
+                },
+              ]),
+            }),
+          }),
         }),
       };
 
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(mockQueryEmbedding);
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([
         {
           name: 'codebase_test-project_1_0_0',
-          id: 'col1',
           metadata: { codebaseName: 'test-project' },
         },
       ]);
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const params: SearchParams = {
         query: 'test query',
@@ -116,20 +118,19 @@ describe('SearchService', () => {
       const mockQueryEmbedding = new Array(384).fill(0.1);
       
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(mockQueryEmbedding);
-      vi.mocked(mockChromaClient.collectionExists).mockResolvedValue(true);
+      vi.mocked(mockLanceClient.tableExists).mockResolvedValue(true);
       
-      const mockCollection = {
-        query: vi.fn().mockResolvedValue({
-          ids: [[]],
-          metadatas: [[]],
-          documents: [[]],
-          distances: [[]],
+      const mockTable = {
+        search: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              toArray: vi.fn().mockResolvedValue([]),
+            }),
+          }),
         }),
       };
 
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const params: SearchParams = {
         query: 'test query',
@@ -138,32 +139,34 @@ describe('SearchService', () => {
 
       await service.search(params);
 
-      expect(mockChromaClient.collectionExists).toHaveBeenCalledWith('specific-project');
+      expect(mockLanceClient.tableExists).toHaveBeenCalledWith('specific-project');
     });
 
     it('should filter by language', async () => {
       const mockQueryEmbedding = new Array(384).fill(0.1);
       
-      const mockCollection = {
-        query: vi.fn().mockResolvedValue({
-          ids: [[]],
-          metadatas: [[]],
-          documents: [[]],
-          distances: [[]],
+      const mockWhere = vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([]),
+      });
+      
+      const mockLimit = vi.fn().mockReturnValue({
+        where: mockWhere,
+      });
+      
+      const mockTable = {
+        search: vi.fn().mockReturnValue({
+          limit: mockLimit,
         }),
       };
 
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(mockQueryEmbedding);
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([
         {
           name: 'codebase_test-project_1_0_0',
-          id: 'col1',
           metadata: { codebaseName: 'test-project' },
         },
       ]);
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const params: SearchParams = {
         query: 'test query',
@@ -172,36 +175,32 @@ describe('SearchService', () => {
 
       await service.search(params);
 
-      expect(mockCollection.query).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { language: 'typescript' },
-        })
-      );
+      expect(mockWhere).toHaveBeenCalledWith('language = "typescript"');
     });
 
     it('should limit results to maxResults', async () => {
       const mockQueryEmbedding = new Array(384).fill(0.1);
       
-      const mockCollection = {
-        query: vi.fn().mockResolvedValue({
-          ids: [[]],
-          metadatas: [[]],
-          documents: [[]],
-          distances: [[]],
+      const mockLimit = vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([]),
+        }),
+      });
+      
+      const mockTable = {
+        search: vi.fn().mockReturnValue({
+          limit: mockLimit,
         }),
       };
 
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(mockQueryEmbedding);
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([
         {
           name: 'codebase_test-project_1_0_0',
-          id: 'col1',
           metadata: { codebaseName: 'test-project' },
         },
       ]);
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const params: SearchParams = {
         query: 'test query',
@@ -210,43 +209,41 @@ describe('SearchService', () => {
 
       await service.search(params);
 
-      expect(mockCollection.query).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nResults: 10,
-        })
-      );
+      expect(mockLimit).toHaveBeenCalledWith(10);
     });
 
     it('should use cached results for identical queries', async () => {
       const mockQueryEmbedding = new Array(384).fill(0.1);
       
-      const mockCollection = {
-        query: vi.fn().mockResolvedValue({
-          ids: [['id1']],
-          metadatas: [[{
-            filePath: '/path/to/file.ts',
-            startLine: 10,
-            endLine: 20,
-            language: 'typescript',
-            chunkType: 'function',
-            codebaseName: 'test-project',
-          }]],
-          documents: [['function test() {}']],
-          distances: [[0.2]],
+      const mockTable = {
+        search: vi.fn().mockReturnValue({
+          limit: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              toArray: vi.fn().mockResolvedValue([
+                {
+                  filePath: '/path/to/file.ts',
+                  startLine: 10,
+                  endLine: 20,
+                  language: 'typescript',
+                  chunkType: 'function',
+                  content: 'function test() {}',
+                  _distance: 0.2,
+                  _codebaseName: 'test-project',
+                },
+              ]),
+            }),
+          }),
         }),
       };
 
       vi.mocked(mockEmbeddingService.generateEmbedding).mockResolvedValue(mockQueryEmbedding);
-      vi.mocked(mockChromaClient.listCollections).mockResolvedValue([
+      vi.mocked(mockLanceClient.listTables).mockResolvedValue([
         {
           name: 'codebase_test-project_1_0_0',
-          id: 'col1',
           metadata: { codebaseName: 'test-project' },
         },
       ]);
-      vi.mocked(mockChromaClient.getClient).mockReturnValue({
-        getCollection: vi.fn().mockResolvedValue(mockCollection),
-      } as any);
+      vi.mocked(mockLanceClient.getOrCreateTable).mockResolvedValue(mockTable as any);
 
       const params: SearchParams = {
         query: 'test query',
@@ -254,11 +251,11 @@ describe('SearchService', () => {
 
       // First search
       const result1 = await service.search(params);
-      expect(mockCollection.query).toHaveBeenCalledTimes(1);
+      expect(mockTable.search).toHaveBeenCalledTimes(1);
 
       // Second search with same params should use cache
       const result2 = await service.search(params);
-      expect(mockCollection.query).toHaveBeenCalledTimes(1); // Not called again
+      expect(mockTable.search).toHaveBeenCalledTimes(1); // Not called again
       expect(result2).toEqual(result1);
     });
 
@@ -300,8 +297,9 @@ describe('SearchService', () => {
       const stats = service.getCacheStats();
       
       expect(stats).toHaveProperty('size');
-      expect(stats).toHaveProperty('entries');
+      expect(stats).toHaveProperty('keys');
       expect(typeof stats.size).toBe('number');
+      expect(Array.isArray(stats.keys)).toBe(true);
     });
   });
 });

@@ -12,7 +12,7 @@
 ├── src/                # Source code
 │   ├── bin/            # Executable entry points (mcp-server, ingest, manager)
 │   ├── domains/        # Domain-specific business logic
-│   ├── infrastructure/ # External integrations (ChromaDB, MCP, Fastify)
+│   ├── infrastructure/ # External integrations (LanceDB, MCP, Fastify)
 │   ├── shared/         # Shared utilities (config, logging, types)
 │   └── ui/             # Web UI components
 ├── dist/               # Compiled TypeScript output (gitignored)
@@ -49,7 +49,7 @@ Planned domains:
 
 ### Infrastructure (`src/infrastructure/`)
 External system integrations:
-- `chromadb/` - ChromaDB client wrapper
+- `lancedb/` - LanceDB client wrapper
 - `mcp/` - MCP server implementation
 - `fastify/` - Fastify server and routes
 

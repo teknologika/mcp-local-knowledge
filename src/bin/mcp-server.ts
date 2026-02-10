@@ -15,7 +15,7 @@
 
 import { loadConfig } from '../shared/config/index.js';
 import { createLogger } from '../shared/logging/index.js';
-import { ChromaDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
+import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 import { HuggingFaceEmbeddingService } from '../domains/embedding/index.js';
 import { CodebaseService } from '../domains/codebase/codebase.service.js';
 import { SearchService } from '../domains/search/search.service.js';
@@ -58,21 +58,20 @@ async function main() {
       schemaVersion: config.schemaVersion,
     });
 
-    // Initialize ChromaDB client (non-blocking - will create directory if needed)
-    mainLogger.info('Creating ChromaDB client', {
-      persistPath: config.chromadb.persistPath,
+    // Initialize LanceDB client (non-blocking - will create directory if needed)
+    mainLogger.info('Creating LanceDB client', {
+      persistPath: config.lancedb.persistPath,
     });
-    const chromaClient = new ChromaDBClientWrapper(config);
+    const lanceClient = new LanceDBClientWrapper(config);
     
-    // Try to initialize, but don't fail if ChromaDB isn't available yet
+    // Try to initialize, but don't fail if LanceDB isn't available yet
     try {
-      await chromaClient.initialize();
-      await chromaClient.checkAllSchemaVersions();
+      await lanceClient.initialize();
     } catch (error) {
-      mainLogger.warn('ChromaDB initialization failed, will retry on first use', {
+      mainLogger.warn('LanceDB initialization failed, will retry on first use', {
         error: error instanceof Error ? error.message : String(error),
       });
-      // Don't exit - let the server start and ChromaDB will initialize on first use
+      // Don't exit - let the server start and LanceDB will initialize on first use
     }
 
     // Initialize embedding service (lazy - will initialize on first use)
@@ -84,12 +83,12 @@ async function main() {
 
     // Initialize codebase service
     mainLogger.info('Initializing codebase service');
-    const codebaseService = new CodebaseService(chromaClient, config);
+    const codebaseService = new CodebaseService(lanceClient, config);
 
     // Initialize search service
     mainLogger.info('Initializing search service');
     const searchService = new SearchService(
-      chromaClient,
+      lanceClient,
       embeddingService,
       config
     );

@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HuggingFaceEmbeddingService } from '../../embedding/embedding.service.js';
 import { SearchService } from '../../search/search.service.js';
 import { IngestionService } from '../ingestion.service.js';
-import { ChromaDBClientWrapper } from '../../../infrastructure/chromadb/chromadb.client.js';
+import { LanceDBClientWrapper } from '../../../infrastructure/lancedb/lancedb.client.js';
 import { loadConfig } from '../../../shared/config/config.js';
 import { createLogger } from '../../../shared/logging/index.js';
 
@@ -70,13 +70,13 @@ describe('Performance Optimizations', () => {
 
   describe('Requirement 12.3: Search Result Caching', () => {
     it('should cache search results for 60 seconds', async () => {
-      const chromaClient = new ChromaDBClientWrapper(config);
-      await chromaClient.initialize();
+      const lanceClient = new LanceDBClientWrapper(config);
+      await lanceClient.initialize();
       
       const embeddingService = new HuggingFaceEmbeddingService(config, logger);
       await embeddingService.initialize();
       
-      const searchService = new SearchService(chromaClient, embeddingService, config);
+      const searchService = new SearchService(lanceClient, embeddingService, config);
       
       // First search
       const start1 = Date.now();
@@ -108,13 +108,13 @@ describe('Performance Optimizations', () => {
     });
 
     it('should cache different queries separately', async () => {
-      const chromaClient = new ChromaDBClientWrapper(config);
-      await chromaClient.initialize();
+      const lanceClient = new LanceDBClientWrapper(config);
+      await lanceClient.initialize();
       
       const embeddingService = new HuggingFaceEmbeddingService(config, logger);
       await embeddingService.initialize();
       
-      const searchService = new SearchService(chromaClient, embeddingService, config);
+      const searchService = new SearchService(lanceClient, embeddingService, config);
       
       // Search with query 1
       await searchService.search({ query: 'query 1' });
@@ -137,13 +137,13 @@ describe('Performance Optimizations', () => {
         },
       };
       
-      const chromaClient = new ChromaDBClientWrapper(testConfig);
-      await chromaClient.initialize();
+      const lanceClient = new LanceDBClientWrapper(testConfig);
+      await lanceClient.initialize();
       
       const embeddingService = new HuggingFaceEmbeddingService(testConfig, logger);
       await embeddingService.initialize();
       
-      const searchService = new SearchService(chromaClient, embeddingService, testConfig);
+      const searchService = new SearchService(lanceClient, embeddingService, testConfig);
       
       // First search
       await searchService.search({ query: 'test query' });
@@ -244,9 +244,9 @@ describe('Performance Optimizations', () => {
       const infoSpy = vi.spyOn(logger, 'info');
       
       // Create ingestion service
-      const chromaClient = new ChromaDBClientWrapper(config);
+      const lanceClient = new LanceDBClientWrapper(config);
       const embeddingService = new HuggingFaceEmbeddingService(config, logger);
-      const ingestionService = new IngestionService(embeddingService, chromaClient, config);
+      const ingestionService = new IngestionService(embeddingService, lanceClient, config);
       
       // Verify memory logging is available
       expect(ingestionService).toBeDefined();

@@ -3,7 +3,7 @@
  * Provides methods for collection management and vector operations
  */
 
-import { connect, type Connection, type Table } from 'vectordb';
+import { connect, type Connection, type Table } from '@lancedb/lancedb';
 import type { Config } from '../../shared/types/index.js';
 import { createLogger } from '../../shared/logging/index.js';
 import { SCHEMA_VERSION } from '../../shared/config/config.js';
