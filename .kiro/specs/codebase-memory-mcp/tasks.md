@@ -88,11 +88,11 @@ This implementation plan breaks down the codebase memory MCP server into increme
     - **Property 5: Recursive File Discovery** - For any directory structure, all files in nested subdirectories should be discovered
     - **Validates: Requirements 2.1**
 
-- [-] 4. Checkpoint - Verify core services
+- [x] 4. Checkpoint - Verify core services
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Phase 3: Parsing and Embedding Services
-  - [~] 5.1 Implement Tree-sitter parsing service
+  - [x] 5.1 Implement Tree-sitter parsing service
     - Load Tree-sitter grammars for supported languages (C#, Java, JavaScript, TypeScript, Python)
     - Implement AST traversal to find semantic nodes (functions, classes, methods, interfaces, properties)
     - Extract chunk metadata: start line, end line, chunk type, content
@@ -114,7 +114,7 @@ This implementation plan breaks down the codebase memory MCP server into increme
     - Test parsing malformed code (should handle gracefully)
     - _Requirements: 2.2, 11.2_
 
-  - [~] 5.4 Implement embedding service with Hugging Face transformers
+  - [x] 5.4 Implement embedding service with Hugging Face transformers
     - Initialize embedding model (Xenova/all-MiniLM-L6-v2) with local caching
     - Implement single embedding generation for code chunks
     - Implement batch embedding generation for efficiency
@@ -130,7 +130,7 @@ This implementation plan breaks down the codebase memory MCP server into increme
     - **Property 27: Embedding Model Caching** - For any process lifetime, model should be loaded exactly once
     - **Validates: Requirements 2.4, 4.2, 4.3, 4.5, 12.1**
 
-- [~] 6. Checkpoint - Verify parsing and embedding
+- [x] 6. Checkpoint - Verify parsing and embedding
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Phase 4: Codebase and Search Services
