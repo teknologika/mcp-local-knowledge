@@ -59,6 +59,7 @@ async function main() {
     .requiredOption('-p, --path <directory>', 'Path to codebase directory')
     .requiredOption('-n, --name <name>', 'Unique name for the codebase')
     .option('-c, --config <file>', 'Path to configuration file')
+    .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
     .parse(process.argv);
 
   const options = program.opts();
@@ -136,6 +137,7 @@ async function main() {
         path: codebasePath,
         name: options.name,
         config,
+        respectGitignore: options.gitignore !== false, // Commander sets to false if --no-gitignore is used
       },
       progressCallback
     );

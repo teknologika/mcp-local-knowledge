@@ -173,14 +173,44 @@ export class SearchService {
           let query = table.search(queryEmbedding).limit(maxResults);
 
           // Add metadata filters if specified
+          const filters: string[] = [];
+          
           if (params.language) {
-            query = query.where(`language = '${params.language}'`);
+            filters.push(`language = '${params.language}'`);
+          }
+          
+          if (params.excludeTests) {
+            filters.push(`isTestFile = false`);
+          }
+          
+          if (params.excludeLibraries) {
+            filters.push(`isLibraryFile = false`);
+          }
+          
+          // Apply combined filter
+          if (filters.length > 0) {
+            query = query.where(filters.join(' AND '));
           }
 
           const searchResults = await query.toArray();
 
           // Process results
           for (const row of searchResults) {
+            // Convert distance to similarity score
+            // LanceDB returns L2 (Euclidean) distance for normalized embeddings
+            // Typical ranges: 0.0 = perfect match, 1.0 = excellent, 1.5 = good, 2.0+ = lower
+            // Convert to similarity score [0, 1] where 1 = perfect match
+            let similarityScore = 0;
+            if (row._distance !== undefined) {
+              // Use a gentler exponential decay: e^(-distance/2)
+              // This gives: distance 0 → 1.00, distance 1.0 → 0.61, distance 1.5 → 0.47, distance 2.0 → 0.37
+              // Then apply a power curve to boost high scores
+              const baseScore = Math.exp(-row._distance / 2);
+              // Apply square root to compress the range and boost scores
+              similarityScore = Math.sqrt(baseScore);
+              // This gives: distance 0 → 1.00, distance 1.0 → 0.78, distance 1.5 → 0.69, distance 2.0 → 0.61
+            }
+            
             const result: SearchResult = {
               filePath: row.filePath || '',
               startLine: row.startLine || 0,
@@ -188,7 +218,7 @@ export class SearchService {
               language: row.language || '',
               chunkType: row.chunkType || '',
               content: row.content || '',
-              similarityScore: row._distance !== undefined ? 1 - row._distance : 0,
+              similarityScore,
               codebaseName: row._codebaseName || tableName,
             };
 

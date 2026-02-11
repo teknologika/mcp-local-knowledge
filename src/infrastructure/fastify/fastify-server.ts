@@ -160,6 +160,17 @@ export class FastifyServer {
         return 'Unknown';
       }
     });
+    handlebars.registerHelper('confidenceClass', (score: any) => {
+      // Convert to number if it's a string
+      const numScore = typeof score === 'number' ? score : parseFloat(String(score));
+      
+      // Handle invalid scores
+      if (isNaN(numScore)) return 'confidence-low';
+      
+      if (numScore >= 0.80) return 'confidence-high';
+      if (numScore >= 0.60) return 'confidence-medium';
+      return 'confidence-low';
+    });
 
     // Add global error handler
     this.fastify.setErrorHandler((error, request, reply) => {

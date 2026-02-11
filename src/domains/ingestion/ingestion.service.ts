@@ -20,6 +20,7 @@ import type { EmbeddingService } from '../embedding/embedding.service.js';
 import { LanceDBClientWrapper } from '../../infrastructure/lancedb/lancedb.client.js';
 import { createLogger, startTimer, logMemoryUsage } from '../../shared/logging/index.js';
 import type { Logger } from '../../shared/logging/logger.js';
+import { classifyFile } from '../../shared/utils/file-classification.js';
 
 const rootLogger = createLogger('info');
 
@@ -99,7 +100,7 @@ export class IngestionService {
       const { files, statistics: scanStats } = await this.fileScanner.scanDirectory(
         codebasePath,
         {
-          respectGitignore: true,
+          respectGitignore: params.respectGitignore ?? true,
           skipHiddenDirectories: true,
           maxFileSize: this.config.ingestion.maxFileSize,
         }
@@ -143,7 +144,16 @@ export class IngestionService {
           }
 
           const chunks = await this.parser.parseFile(file.path, file.language as any);
-          allChunks.push(...chunks);
+          
+          // Classify file and add metadata to chunks
+          const classification = classifyFile(file.relativePath);
+          const chunksWithMetadata = chunks.map(chunk => ({
+            ...chunk,
+            isTestFile: classification.isTest,
+            isLibraryFile: classification.isLibrary,
+          }));
+          
+          allChunks.push(...chunksWithMetadata);
 
           // Update language statistics
           const langKey = file.language;
@@ -399,6 +409,8 @@ export class IngestionService {
         endLine: chunk.endLine || 0,
         language: chunk.language || 'unknown',
         chunkType: chunk.chunkType || 'unknown',
+        isTestFile: chunk.isTestFile || false,
+        isLibraryFile: chunk.isLibraryFile || false,
         ingestionTimestamp,
         _codebaseName: codebaseName,
         _path: codebasePath,

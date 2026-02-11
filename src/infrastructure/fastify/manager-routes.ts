@@ -148,10 +148,15 @@ export async function registerManagerRoutes(
    * Search codebases
    */
   fastify.post('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { query, maxResults = 10 } = request.body as { query: string; maxResults?: number };
+    const { query, maxResults = 10, excludeTests, excludeLibraries } = request.body as { 
+      query: string; 
+      maxResults?: number;
+      excludeTests?: string;
+      excludeLibraries?: string;
+    };
     
     try {
-      logger.info('POST /search', { query, maxResults });
+      logger.info('POST /search', { query, maxResults, excludeTests, excludeLibraries });
       
       if (!query || query.trim() === '') {
         (request as any).flash('message', 'Search query is required');
@@ -161,7 +166,9 @@ export async function registerManagerRoutes(
       
       const results = await searchService.search({
         query,
-        maxResults: Number(maxResults)
+        maxResults: Number(maxResults),
+        excludeTests: excludeTests === 'true',
+        excludeLibraries: excludeLibraries === 'true',
       });
       
       const codebases = await codebaseService.listCodebases();
@@ -171,7 +178,9 @@ export async function registerManagerRoutes(
         codebases,
         searchResults: results.results,
         searchQuery: query,
-        maxResults: Number(maxResults)
+        maxResults: Number(maxResults),
+        excludeTests: excludeTests === 'true',
+        excludeLibraries: excludeLibraries === 'true',
       });
     } catch (error) {
       logger.error('Search failed', error instanceof Error ? error : new Error(String(error)));
@@ -186,10 +195,10 @@ export async function registerManagerRoutes(
    * Start codebase ingestion (returns job ID immediately)
    */
   fastify.post('/ingest', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { name, path } = request.body as { name: string; path: string };
+    const { name, path, respectGitignore } = request.body as { name: string; path: string; respectGitignore?: string };
     
     try {
-      logger.info('POST /ingest - received request', { name, path, body: request.body });
+      logger.info('POST /ingest - received request', { name, path, respectGitignore, body: request.body });
       
       // Validation
       if (!name || !path) {
@@ -237,7 +246,7 @@ export async function registerManagerRoutes(
       // Create job ID
       const jobId = randomUUID();
       
-      logger.info('POST /ingest - starting ingestion', { jobId, normalizedName, path });
+      logger.info('POST /ingest - starting ingestion', { jobId, normalizedName, path, respectGitignore });
       
       // Initialize job tracking
       ingestionJobs.set(jobId, {
@@ -251,7 +260,12 @@ export async function registerManagerRoutes(
       
       // Start ingestion in background
       ingestionService.ingestCodebase(
-        { name: normalizedName, path, config },
+        { 
+          name: normalizedName, 
+          path, 
+          config,
+          respectGitignore: respectGitignore === 'true'
+        },
         (phase: string, current: number, total: number) => {
           const job = ingestionJobs.get(jobId);
           if (job) {

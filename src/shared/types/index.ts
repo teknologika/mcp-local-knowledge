@@ -60,6 +60,8 @@ export interface Chunk {
   chunkType: ChunkType;
   language: Language;
   filePath: string;
+  isTestFile?: boolean;
+  isLibraryFile?: boolean;
 }
 
 /**
@@ -96,6 +98,8 @@ export interface SearchParams {
   codebaseName?: string;
   language?: string;
   maxResults?: number;
+  excludeTests?: boolean;
+  excludeLibraries?: boolean;
 }
 
 /**
@@ -145,6 +149,7 @@ export interface IngestionParams {
   path: string;
   name: string;
   config: Config;
+  respectGitignore?: boolean;
 }
 
 /**

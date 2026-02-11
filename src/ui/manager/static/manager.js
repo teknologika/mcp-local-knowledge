@@ -537,3 +537,10 @@ function confirmRemove(codebaseName, displayName) {
         form.submit();
     }
 }
+
+
+// Toggle search result expand/collapse
+function toggleSearchResult(element) {
+    const isExpanded = element.getAttribute('data-expanded') === 'true';
+    element.setAttribute('data-expanded', isExpanded ? 'false' : 'true');
+}
