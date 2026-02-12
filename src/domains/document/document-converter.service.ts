@@ -5,7 +5,8 @@ import type { DocumentConversionResult, DocumentMetadata } from './document.type
 import type { DocumentType } from '../../shared/types/index.js';
 import { createLogger } from '../../shared/logging/index.js';
 
-const logger = createLogger({ module: 'DocumentConverterService' });
+const rootLogger = createLogger('info');
+const logger = rootLogger.child('DocumentConverterService');
 
 /**
  * Service for converting various document formats to markdown using docling-sdk
@@ -31,7 +32,7 @@ export class DocumentConverterService {
     const fileName = basename(filePath);
     const documentType = this.detectDocumentType(filePath);
 
-    logger.info({ filePath, documentType }, 'Starting document conversion');
+    logger.info('Starting document conversion', { filePath, documentType });
 
     try {
       // Create timeout promise
@@ -62,10 +63,7 @@ export class DocumentConverterService {
         conversionDuration: Date.now() - startTime,
       };
 
-      logger.info(
-        { filePath, duration: metadata.conversionDuration, wordCount: metadata.wordCount },
-        'Document conversion completed'
-      );
+      logger.info('Document conversion completed', { filePath, duration: metadata.conversionDuration, wordCount: metadata.wordCount });
 
       return {
         markdown,
@@ -76,11 +74,11 @@ export class DocumentConverterService {
       const duration = Date.now() - startTime;
       
       if (error instanceof Error && error.message.includes('timed out')) {
-        logger.warn({ filePath, duration }, 'Document conversion timed out, attempting fallback');
+        logger.warn('Document conversion timed out, attempting fallback', { filePath, duration });
         return this.fallbackTextExtraction(filePath, documentType, duration);
       }
 
-      logger.error({ filePath, error, duration }, 'Document conversion failed, attempting fallback');
+      logger.error('Document conversion failed, attempting fallback', error instanceof Error ? error : undefined, { filePath, duration });
       return this.fallbackTextExtraction(filePath, documentType, duration);
     }
   }
@@ -115,7 +113,7 @@ export class DocumentConverterService {
       // For other formats, return error
       throw new Error(`Fallback text extraction not supported for ${documentType} files`);
     } catch (error) {
-      logger.error({ filePath, error }, 'Fallback text extraction failed');
+      logger.error('Fallback text extraction failed', error instanceof Error ? error : undefined, { filePath });
       throw new Error(
         `Failed to convert document ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

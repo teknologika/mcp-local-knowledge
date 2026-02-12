@@ -3,7 +3,7 @@ import type { DocumentChunk, ChunkingOptions, ChunkMetadata } from './document.t
 import type { ChunkType } from '../../shared/types/index.js';
 import { createLogger } from '../../shared/logging/index.js';
 
-const logger = createLogger({ module: 'DocumentChunkerService' });
+const logger = createLogger('info').child('DocumentChunkerService');
 
 /**
  * Service for chunking documents using HybridChunker with fallback
@@ -92,6 +92,12 @@ export class DocumentChunkerService {
       const chunkType = this.detectChunkType(chunk);
       const headingPath = this.extractHeadingPath(chunk);
 
+      // Validate and use token count from chunk, or estimate if invalid
+      let tokenCount = chunk.token_count;
+      if (typeof tokenCount !== 'number' || tokenCount < 0 || isNaN(tokenCount)) {
+        tokenCount = this.estimateTokenCount(content);
+      }
+
       const metadata: ChunkMetadata = {
         chunkType,
         hasContext: true,
@@ -102,7 +108,7 @@ export class DocumentChunkerService {
       return {
         content,
         index,
-        tokenCount: chunk.token_count || this.estimateTokenCount(content),
+        tokenCount,
         metadata,
       };
     });
@@ -199,9 +205,18 @@ export class DocumentChunkerService {
       });
 
       chunkIndex++;
-      startIndex = endIndex - chunkOverlap;
-
-      // Prevent infinite loop
+      
+      // Move to next chunk position
+      const nextStart = endIndex - chunkOverlap;
+      
+      // Prevent infinite loop: ensure we're making progress
+      if (nextStart <= startIndex) {
+        startIndex = endIndex;
+      } else {
+        startIndex = nextStart;
+      }
+      
+      // Break if we've reached the end
       if (startIndex >= content.length) {
         break;
       }

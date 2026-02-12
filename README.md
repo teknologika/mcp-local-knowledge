@@ -1,6 +1,6 @@
-# @teknologika/mcp-codebase-search
+# @teknologika/mcp-local-knowledge
 
-> A local-first semantic search system for codebases using the Model Context Protocol (MCP)
+> A local-first semantic search system for documents using the Model Context Protocol (MCP)
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D23.0.0-brightgreen)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -14,7 +14,7 @@
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [MCP Client Configuration](#mcp-client-configuration)
-- [Supported Languages](#supported-languages)
+- [Supported Document Formats](#supported-document-formats)
 - [Architecture](#architecture)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -23,28 +23,28 @@
 
 ## Overview
 
-The Codebase Memory MCP Server enables LLM coding assistants to reliably discover existing code in a codebase, preventing duplicate implementations and wrong-file edits. It uses local embeddings, Tree-sitter-aware chunking, and LanceDB for vector storage, ensuring all operations run locally without cloud dependencies.
+The Local Knowledge MCP Server enables AI assistants to search and retrieve information from your document collections using semantic search. It supports PDFs, Word documents, presentations, spreadsheets, and more—all processed locally without cloud dependencies.
 
 ### Why Use This?
 
-- **Prevent Duplicate Code**: AI assistants can find existing implementations before creating new ones
-- **Accurate Code Navigation**: Semantic search understands code meaning, not just keywords
-- **Privacy-First**: All processing happens locally—your code never leaves your machine
+- **Find Information Fast**: AI assistants can search across all your documents semantically
+- **Privacy-First**: All processing happens locally—your documents never leave your machine
+- **Multi-Format Support**: PDFs, DOCX, PPTX, XLSX, HTML, Markdown, text files, and audio
+- **Smart Chunking**: Structure-aware document chunking preserves context and meaning
 - **Fast & Efficient**: Optimized for quick search responses with intelligent caching
-- **Multi-Language**: Support for C#, Java, JavaScript, TypeScript, and Python
-- **Smart Filtering**: Exclude test files and library code from search results
+- **Easy Integration**: Works seamlessly with Claude Desktop and other MCP clients
 
 ## Features
 
 - 🔒 **Local-First**: All operations run locally without external API calls
-- 🔍 **Semantic Search**: Find code by meaning, not just keywords
-- 🌳 **Tree-sitter Parsing**: AST-aware code chunking for meaningful results
+- 🔍 **Semantic Search**: Find information by meaning, not just keywords
+- 📄 **Multi-Format Support**: PDF, DOCX, PPTX, XLSX, HTML, Markdown, text, audio
 - 🤖 **MCP Integration**: Seamless integration with MCP-compatible AI assistants (Claude Desktop, etc.)
-- 🌐 **Multi-Language Support**: C#, Java, JavaScript, TypeScript, Python
-- 🖥️ **Web Management UI**: Manage indexed codebases through a web interface
+- 🧠 **Smart Chunking**: Structure-aware chunking preserves document hierarchy
+- 🖥️ **Web Management UI**: Manage knowledge bases through a web interface
 - ⚡ **Performance Optimized**: Sub-500ms search responses with intelligent caching
-- 🎯 **Smart Filtering**: Exclude test files and library code from results
-- 📊 **Detailed Statistics**: Track chunk counts, file counts, and language distribution
+- 🎯 **Smart Filtering**: Filter by document type, exclude test files
+- 📊 **Detailed Statistics**: Track chunk counts, file counts, and document type distribution
 - 🔄 **Gitignore Support**: Respects .gitignore patterns during ingestion
 
 
@@ -53,25 +53,25 @@ The Codebase Memory MCP Server enables LLM coding assistants to reliably discove
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g @teknologika/mcp-codebase-search
+npm install -g @teknologika/mcp-local-knowledge
 ```
 
 This makes three commands available globally:
-- `mcp-codebase-search` - MCP server for AI assistants
-- `mcp-codebase-ingest` - CLI for indexing codebases
-- `mcp-codebase-manager` - Web UI for management
+- `mcp-local-knowledge` - MCP server for AI assistants
+- `mcp-knowledge-ingest` - CLI for indexing documents
+- `mcp-knowledge-manager` - Web UI for management
 
 ### Local Installation
 
 ```bash
-npm install @teknologika/mcp-codebase-search
+npm install @teknologika/mcp-local-knowledge
 ```
 
 Then use with `npx`:
 ```bash
-npx mcp-codebase-ingest --path ./my-project --name my-project
-npx mcp-codebase-search
-npx mcp-codebase-manager
+npx mcp-knowledge-ingest --path ./my-documents --name my-documents
+npx mcp-local-knowledge
+npx mcp-knowledge-manager
 ```
 
 ### Requirements
@@ -107,35 +107,37 @@ python -c "import docling; print('Docling installed successfully')"
 
 ## Quick Start
 
-### 1. Index Your First Codebase
+### 1. Index Your First Knowledge Base
 
 ```bash
-mcp-codebase-ingest --path ./my-project --name my-project
+mcp-knowledge-ingest --path ./my-documents --name my-documents
 ```
 
 **Example Output:**
 ```
-Ingesting codebase: my-project
-Path: /Users/dev/projects/my-project
+Ingesting knowledge base: my-documents
+Path: /Users/dev/documents/my-documents
+Supported formats: PDF, DOCX, PPTX, XLSX, HTML, Markdown, Text, Audio
 
-Scanning directory: [████████████████████] 100% (1,234/1,234)
-Parsing files: [████████████████████] 100% (1,100/1,100)
-Generating embeddings: [████████████████████] 100% (5,678/5,678)
-Storing chunks: [████████████████████] 100% (5,678/5,678)
+Scanning directory: [████████████████████] 100% (234/234)
+Processing documents: [████████████████████] 100% (200/200)
+Generating embeddings: [████████████████████] 100% (1,234/1,234)
+Storing chunks: [████████████████████] 100% (1,234/1,234)
 
 ✓ Ingestion completed successfully!
 
 Statistics:
-  Total files scanned: 1,234
-  Supported files: 1,100
-  Unsupported files: 134
-  Chunks created: 5,678
+  Total files scanned: 234
+  Supported files: 200
+  Unsupported files: 34
+  Chunks created: 1,234
   Duration: 45.2s
 
-Languages detected:
-  typescript: 3,200 chunks (800 files)
-  python: 1,500 chunks (200 files)
-  java: 978 chunks (100 files)
+Document types:
+  pdf: 450 chunks (50 files)
+  docx: 380 chunks (40 files)
+  markdown: 280 chunks (80 files)
+  text: 124 chunks (30 files)
 ```
 
 ### 2. Configure Your MCP Client
@@ -147,8 +149,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 ```json
 {
   "mcpServers": {
-    "codebase-search": {
-      "command": "mcp-codebase-search",
+    "local-knowledge": {
+      "command": "mcp-local-knowledge",
       "args": []
     }
   }
@@ -159,94 +161,94 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 Once configured, your AI assistant can use these tools:
 
-- **list_codebases**: See all indexed codebases
-- **search_codebases**: Search for code semantically
-- **get_codebase_stats**: View detailed statistics
-- **open_codebase_manager**: Launch and open the Manager UI in your browser
+- **list_knowledgebases**: See all indexed knowledge bases
+- **search_knowledgebases**: Search for information semantically
+- **get_knowledgebase_stats**: View detailed statistics
+- **open_knowledgebase_manager**: Launch and open the Manager UI in your browser
 
 ### 4. (Optional) Explore the Manager UI
 
 ```bash
-mcp-codebase-manager
+mcp-knowledge-manager
 ```
 
 Opens `http://localhost:8008` in your default browser with a visual interface for:
-- Searching codebases with filters
-- Managing indexed codebases
+- Searching documents with filters
+- Managing indexed knowledge bases
 - Viewing statistics and metadata
-- Adding new codebases with real-time progress
+- Adding new knowledge bases with real-time progress
 
 
 ## Usage
 
 ### Ingestion CLI
 
-The `mcp-codebase-ingest` command indexes a codebase for semantic search.
+The `mcp-knowledge-ingest` command indexes documents for semantic search.
 
 #### Basic Usage
 
 ```bash
-mcp-codebase-ingest --path <directory> --name <codebase-name>
+mcp-knowledge-ingest --path <directory> --name <knowledge-base-name>
 ```
 
 #### Options
 
 | Option | Description | Required | Example |
 |--------|-------------|----------|---------|
-| `-p, --path` | Path to codebase directory | Yes | `--path ./my-project` |
-| `-n, --name` | Unique name for the codebase | Yes | `--name my-project` |
+| `-p, --path` | Path to document directory | Yes | `--path ./my-documents` |
+| `-n, --name` | Unique name for the knowledge base | Yes | `--name my-documents` |
 | `-c, --config` | Path to configuration file | No | `--config ./config.json` |
 | `--no-gitignore` | Disable .gitignore filtering | No | `--no-gitignore` |
 
 #### Examples
 
-**Index a local project:**
+**Index a document folder:**
 ```bash
-mcp-codebase-ingest --path ~/projects/my-app --name my-app
+mcp-knowledge-ingest --path ~/Documents/work --name work-docs
 ```
 
 **Index with custom config:**
 ```bash
-mcp-codebase-ingest --path ./backend --name backend-api --config ./custom-config.json
+mcp-knowledge-ingest --path ./reports --name quarterly-reports --config ./custom-config.json
 ```
 
 **Index without gitignore filtering:**
 ```bash
-mcp-codebase-ingest --path ./my-project --name my-project --no-gitignore
+mcp-knowledge-ingest --path ./my-documents --name my-documents --no-gitignore
 ```
 
-**Re-index an existing codebase:**
+**Re-index an existing knowledge base:**
 ```bash
 # Simply run the same command again - old data is automatically replaced
-mcp-codebase-ingest --path ~/projects/my-app --name my-app
+mcp-knowledge-ingest --path ~/Documents/work --name work-docs
 ```
 
 #### What Gets Indexed?
 
-- ✅ All files with supported extensions (`.cs`, `.java`, `.js`, `.jsx`, `.ts`, `.tsx`, `.py`)
+- ✅ All files with supported extensions (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.html`, `.md`, `.txt`, `.mp3`, `.wav`, `.m4a`, `.flac`)
 - ✅ Files in nested subdirectories (recursive scanning)
-- ✅ Semantic code chunks (functions, classes, methods, interfaces)
-- ✅ Metadata tags (test files, library files)
-- ❌ Files larger than 1MB (configurable via `maxFileSize`)
+- ✅ Semantic document chunks (paragraphs, sections, tables, headings)
+- ✅ Metadata tags (document type, page numbers, heading hierarchy)
+- ❌ Files larger than 10MB (configurable via `maxFileSize`)
 - ❌ Files in `.gitignore` (by default, use `--no-gitignore` to include)
 - ❌ Binary files and unsupported formats
 - ❌ Hidden directories (starting with `.`)
 
 ### MCP Server
 
-The MCP server exposes tools for AI assistants to search and explore codebases.
+The MCP server exposes tools for AI assistants to search and explore knowledge bases.
 
 #### Starting the Server
 
 ```bash
-mcp-codebase-search
+mcp-local-knowledge
 ```
 
 The server runs in stdio mode and communicates with MCP clients via standard input/output.
 
 #### Available Tools
 
-##### 1. `list_codebases`
+##### 1. `list_knowledgebases`
 
 Lists all indexed codebases with metadata.
 

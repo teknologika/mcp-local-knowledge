@@ -53,10 +53,10 @@ async function main() {
   const program = new Command();
 
   program
-    .name('ingest')
-    .description('Ingest a knowledge base for semantic search')
+    .name('mcp-knowledge-ingest')
+    .description('Ingest documents into a knowledge base for semantic search')
     .version('0.1.0')
-    .requiredOption('-p, --path <directory>', 'Path to knowledge base directory')
+    .requiredOption('-p, --path <directory>', 'Path to document directory')
     .requiredOption('-n, --name <name>', 'Unique name for the knowledge base')
     .option('-c, --config <file>', 'Path to configuration file')
     .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
@@ -89,6 +89,7 @@ async function main() {
 
     console.log(`\nIngesting knowledge base: ${options.name}`);
     console.log(`Path: ${knowledgeBasePath}`);
+    console.log(`Supported formats: PDF, DOCX, PPTX, XLSX, HTML, Markdown, Text, Audio`);
     console.log('');
 
     // Initialize services

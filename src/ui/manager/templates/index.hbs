@@ -1,8 +1,8 @@
 <!-- Page Header -->
 <div class="page-header">
     <div>
-        <h1 class="greeting">Codebase Memory Manager</h1>
-        <p class="greeting-sub">Semantic search across your indexed codebases</p>
+        <h1 class="greeting">Knowledge Base Manager</h1>
+        <p class="greeting-sub">Semantic search across your indexed documents</p>
     </div>
     <button onclick="quitManager()" class="btn btn-ghost" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
@@ -32,7 +32,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
             <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
         </svg>
-        Manage Codebases
+        Manage Knowledge Bases
         <span class="badge badge-blue" style="margin-left: 0.5rem;">{{codebases.length}}</span>
     </button>
 </div>
@@ -44,20 +44,20 @@
 <div class="card hero-search">
     <div class="card-header">
         <div>
-            <h2 class="card-title" style="font-size: 1.5rem; margin-bottom: 0.5rem;">Search Your Code</h2>
-            <p class="card-subtitle">Find functions, classes, patterns, and more across all your codebases</p>
+            <h2 class="card-title" style="font-size: 1.5rem; margin-bottom: 0.5rem;">Search Your Documents</h2>
+            <p class="card-subtitle">Find information across all your documents - PDFs, Word docs, presentations, and more</p>
         </div>
     </div>
     <form method="POST" action="/search">
         <div class="form-group">
             <label class="form-label">Search Query</label>
-            <input type="text" name="query" class="form-input" style="font-size: 1rem; padding: 1rem;" placeholder="e.g., authentication function, error handling, database connection..." value="{{searchQuery}}" required autofocus>
+            <input type="text" name="query" class="form-input" style="font-size: 1rem; padding: 1rem;" placeholder="e.g., project requirements, meeting notes, Q4 strategy..." value="{{searchQuery}}" required autofocus>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
-                <label class="form-label">Codebase</label>
+                <label class="form-label">Knowledge Base</label>
                 <select name="codebaseName" class="form-input">
-                    <option value="">All Codebases</option>
+                    <option value="">All Knowledge Bases</option>
                     {{#each codebases}}
                     <option value="{{name}}">{{name}}</option>
                     {{/each}}
@@ -141,18 +141,18 @@
 </div>
 </div>
 
-<!-- Manage Codebases Tab Content -->
+<!-- Manage Knowledge Bases Tab Content -->
 <div id="manageTab" class="tab-content">
-<!-- Codebases Section -->
+<!-- Knowledge Bases Section -->
 <div style="margin-top: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;" id="codebasesHeader">
-        <h2 style="font-size: 1.25rem; font-weight: 600;">Your Codebases</h2>
+        <h2 style="font-size: 1.25rem; font-weight: 600;">Your Knowledge Bases</h2>
         <button type="button" class="btn btn-primary" onclick="showIngestForm()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Add Codebase
+            Add Knowledge Base
         </button>
     </div>
 
@@ -215,9 +215,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 64px; height: 64px; opacity: 0.5; margin-bottom: 1rem;">
                 <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
             </svg>
-            <p>No codebases found</p>
+            <p>No knowledge bases found</p>
             <p style="font-size: 0.875rem; margin-top: 0.5rem; color: var(--text-secondary);">
-                Click "Add Codebase" to get started
+                Click "Add Knowledge Base" to get started
             </p>
         </div>
         {{/if}}
@@ -229,16 +229,16 @@
     <div class="card-header">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div>
-                <h3 class="card-title">Add New Codebase</h3>
-                <p class="card-subtitle">Index a directory for semantic search</p>
+                <h3 class="card-title">Add New Knowledge Base</h3>
+                <p class="card-subtitle">Index documents for semantic search</p>
             </div>
             <button type="button" class="btn btn-ghost" onclick="hideIngestForm()">×</button>
         </div>
     </div>
     <form method="POST" action="/ingest" id="ingestForm">
         <div class="form-group">
-            <label class="form-label">Codebase Name</label>
-            <input type="text" name="name" id="codebaseName" class="form-input" placeholder="my project" required>
+            <label class="form-label">Knowledge Base Name</label>
+            <input type="text" name="name" id="codebaseName" class="form-input" placeholder="my documents" required>
             <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
                 Use spaces or hyphens - spaces will be shown as title case in the UI
             </p>
@@ -246,7 +246,7 @@
         <div class="form-group">
             <label class="form-label">Directory Path</label>
             <div style="display: flex; gap: 0.5rem;">
-                <input type="text" name="path" id="pathInput" class="form-input" placeholder="/path/to/codebase" required style="flex: 1;">
+                <input type="text" name="path" id="pathInput" class="form-input" placeholder="/path/to/documents" required style="flex: 1;">
                 <button type="button" class="btn btn-primary" onclick="selectFolder()" id="folderPickerBtn">
                     Browse...
                 </button>
@@ -283,7 +283,7 @@
             </div>
         </div>
         <p id="progressDetails" style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.5rem;">
-            Preparing to ingest codebase...
+            Preparing to ingest documents...
         </p>
     </div>
 </div>
@@ -293,7 +293,7 @@
 <div id="renameModal" class="modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Rename Codebase</h3>
+            <h3>Rename Knowledge Base</h3>
             <button type="button" class="btn btn-ghost" onclick="closeRenameModal()">×</button>
         </div>
         <form method="POST" action="/rename">
