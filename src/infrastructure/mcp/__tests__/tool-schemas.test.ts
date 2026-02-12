@@ -9,10 +9,10 @@ import { describe, it, expect } from 'vitest';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import {
-  LIST_CODEBASES_SCHEMA,
-  SEARCH_CODEBASES_SCHEMA,
-  GET_CODEBASE_STATS_SCHEMA,
-  OPEN_CODEBASE_MANAGER_SCHEMA,
+  LIST_KNOWLEDGEBASES_SCHEMA,
+  SEARCH_KNOWLEDGEBASES_SCHEMA,
+  GET_KNOWLEDGEBASE_STATS_SCHEMA,
+  OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA,
   ALL_TOOL_SCHEMAS,
 } from '../tool-schemas.js';
 
@@ -20,39 +20,39 @@ describe('MCP Tool Schemas', () => {
   const ajv = new Ajv({ allErrors: true, strict: true });
   addFormats(ajv);
 
-  describe('LIST_CODEBASES_SCHEMA', () => {
+  describe('LIST_KNOWLEDGEBASES_SCHEMA', () => {
     it('should have correct name and description', () => {
-      expect(LIST_CODEBASES_SCHEMA.name).toBe('list_codebases');
-      expect(LIST_CODEBASES_SCHEMA.description).toBeTruthy();
-      expect(LIST_CODEBASES_SCHEMA.description.length).toBeGreaterThan(10);
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.name).toBe('list_knowledgebases');
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.description).toBeTruthy();
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.description.length).toBeGreaterThan(10);
     });
 
     it('should have empty input schema', () => {
-      expect(LIST_CODEBASES_SCHEMA.inputSchema.type).toBe('object');
-      expect(LIST_CODEBASES_SCHEMA.inputSchema.properties).toEqual({});
-      expect(LIST_CODEBASES_SCHEMA.inputSchema.additionalProperties).toBe(false);
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema.type).toBe('object');
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema.properties).toEqual({});
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema.additionalProperties).toBe(false);
     });
 
     it('should validate empty input', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({})).toBe(true);
     });
 
     it('should reject input with extra properties', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ extra: 'property' })).toBe(false);
     });
 
     it('should have valid output schema with knowledgebases array', () => {
-      expect(LIST_CODEBASES_SCHEMA.outputSchema.type).toBe('object');
-      expect(LIST_CODEBASES_SCHEMA.outputSchema.properties.codebases).toBeDefined();
-      expect(LIST_CODEBASES_SCHEMA.outputSchema.properties.codebases.type).toBe('array');
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema.type).toBe('object');
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema.properties.knowledgebases).toBeDefined();
+      expect(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema.properties.knowledgebases.type).toBe('array');
     });
 
     it('should validate correct output', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
-        codebases: [
+        knowledgebases: [
           {
             name: 'test-project',
             path: '/path/to/project',
@@ -66,9 +66,9 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with missing required fields', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
-        codebases: [
+        knowledgebases: [
           {
             name: 'test-project',
             // Missing other required fields
@@ -79,9 +79,9 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with negative counts', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
-        codebases: [
+        knowledgebases: [
           {
             name: 'test-project',
             path: '/path/to/project',
@@ -95,27 +95,27 @@ describe('MCP Tool Schemas', () => {
     });
   });
 
-  describe('SEARCH_CODEBASES_SCHEMA', () => {
+  describe('SEARCH_KNOWLEDGEBASES_SCHEMA', () => {
     it('should have correct name and description', () => {
-      expect(SEARCH_CODEBASES_SCHEMA.name).toBe('search_codebases');
-      expect(SEARCH_CODEBASES_SCHEMA.description).toBeTruthy();
-      expect(SEARCH_CODEBASES_SCHEMA.description.length).toBeGreaterThan(10);
+      expect(SEARCH_KNOWLEDGEBASES_SCHEMA.name).toBe('search_knowledgebases');
+      expect(SEARCH_KNOWLEDGEBASES_SCHEMA.description).toBeTruthy();
+      expect(SEARCH_KNOWLEDGEBASES_SCHEMA.description.length).toBeGreaterThan(10);
     });
 
     it('should require query parameter', () => {
-      expect(SEARCH_CODEBASES_SCHEMA.inputSchema.required).toContain('query');
+      expect(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema.required).toContain('query');
     });
 
     it('should validate input with only query', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ query: 'authentication function' })).toBe(true);
     });
 
     it('should validate input with all optional parameters', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       const input = {
         query: 'database connection',
-        codebaseName: 'my-project',
+        knowledgebaseName: 'my-project',
         documentType: 'markdown',
         maxResults: 25,
       };
@@ -123,12 +123,12 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject empty query', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ query: '' })).toBe(false);
     });
 
     it('should reject invalid documentType', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       const input = {
         query: 'test',
         documentType: 'invalid', // Not in enum
@@ -137,7 +137,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject maxResults below minimum', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       const input = {
         query: 'test',
         maxResults: 0,
@@ -146,7 +146,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject maxResults above maximum', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       const input = {
         query: 'test',
         maxResults: 201,
@@ -155,7 +155,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should validate correct output', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
         results: [
           {
@@ -166,7 +166,7 @@ describe('MCP Tool Schemas', () => {
             chunkType: 'function',
             content: 'function authenticate() { ... }',
             similarityScore: 0.95,
-            codebaseName: 'my-project',
+            knowledgebaseName: 'my-project',
           },
         ],
         totalResults: 1,
@@ -176,7 +176,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with invalid similarity score', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
         results: [
           {
@@ -187,7 +187,7 @@ describe('MCP Tool Schemas', () => {
             chunkType: 'function',
             content: 'function authenticate() { ... }',
             similarityScore: 1.5, // Above maximum
-            codebaseName: 'my-project',
+            knowledgebaseName: 'my-project',
           },
         ],
         totalResults: 1,
@@ -197,7 +197,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with invalid line numbers', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
         results: [
           {
@@ -208,7 +208,7 @@ describe('MCP Tool Schemas', () => {
             chunkType: 'function',
             content: 'function authenticate() { ... }',
             similarityScore: 0.95,
-            codebaseName: 'my-project',
+            knowledgebaseName: 'my-project',
           },
         ],
         totalResults: 1,
@@ -218,34 +218,34 @@ describe('MCP Tool Schemas', () => {
     });
   });
 
-  describe('GET_CODEBASE_STATS_SCHEMA', () => {
+  describe('GET_KNOWLEDGEBASE_STATS_SCHEMA', () => {
     it('should have correct name and description', () => {
-      expect(GET_CODEBASE_STATS_SCHEMA.name).toBe('get_codebase_stats');
-      expect(GET_CODEBASE_STATS_SCHEMA.description).toBeTruthy();
-      expect(GET_CODEBASE_STATS_SCHEMA.description.length).toBeGreaterThan(10);
+      expect(GET_KNOWLEDGEBASE_STATS_SCHEMA.name).toBe('get_knowledgebase_stats');
+      expect(GET_KNOWLEDGEBASE_STATS_SCHEMA.description).toBeTruthy();
+      expect(GET_KNOWLEDGEBASE_STATS_SCHEMA.description.length).toBeGreaterThan(10);
     });
 
     it('should require name parameter', () => {
-      expect(GET_CODEBASE_STATS_SCHEMA.inputSchema.required).toContain('name');
+      expect(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema.required).toContain('name');
     });
 
     it('should validate input with name', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.inputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema);
       expect(validate({ name: 'my-project' })).toBe(true);
     });
 
     it('should reject empty name', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.inputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema);
       expect(validate({ name: '' })).toBe(false);
     });
 
     it('should reject input with extra properties', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.inputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema);
       expect(validate({ name: 'test', extra: 'property' })).toBe(false);
     });
 
     it('should validate correct output', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.outputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.outputSchema);
       const output = {
         name: 'my-project',
         path: '/path/to/project',
@@ -284,7 +284,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with missing required fields', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.outputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.outputSchema);
       const output = {
         name: 'my-project',
         path: '/path/to/project',
@@ -294,31 +294,31 @@ describe('MCP Tool Schemas', () => {
     });
   });
 
-  describe('OPEN_CODEBASE_MANAGER_SCHEMA', () => {
+  describe('OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA', () => {
     it('should have correct name and description', () => {
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.name).toBe('open_codebase_manager');
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.description).toBeTruthy();
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.description.length).toBeGreaterThan(10);
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.name).toBe('open_knowledgebase_manager');
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.description).toBeTruthy();
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.description.length).toBeGreaterThan(10);
     });
 
     it('should have empty input schema', () => {
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema.type).toBe('object');
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema.properties).toEqual({});
-      expect(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema.additionalProperties).toBe(false);
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema.type).toBe('object');
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema.properties).toEqual({});
+      expect(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema.additionalProperties).toBe(false);
     });
 
     it('should validate empty input', () => {
-      const validate = ajv.compile(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema);
+      const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema);
       expect(validate({})).toBe(true);
     });
 
     it('should reject input with extra properties', () => {
-      const validate = ajv.compile(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema);
+      const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema);
       expect(validate({ extra: 'property' })).toBe(false);
     });
 
     it('should validate correct output', () => {
-      const validate = ajv.compile(OPEN_CODEBASE_MANAGER_SCHEMA.outputSchema);
+      const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.outputSchema);
       const output = {
         url: 'http://localhost:8008',
         message: 'Knowledge Base Manager UI opened in default browser',
@@ -327,7 +327,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should reject output with missing required fields', () => {
-      const validate = ajv.compile(OPEN_CODEBASE_MANAGER_SCHEMA.outputSchema);
+      const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.outputSchema);
       const output = {
         url: 'http://localhost:8008',
         // Missing message
@@ -417,21 +417,21 @@ describe('MCP Tool Schemas', () => {
 
   describe('Validation Rules', () => {
     it('should enforce minLength on query parameter', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ query: '' })).toBe(false);
       expect(validate({ query: 'a' })).toBe(true);
     });
 
     it('should enforce minLength on name parameter', () => {
-      const validate = ajv.compile(GET_CODEBASE_STATS_SCHEMA.inputSchema);
+      const validate = ajv.compile(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema);
       expect(validate({ name: '' })).toBe(false);
       expect(validate({ name: 'a' })).toBe(true);
     });
 
     it('should enforce minimum values on numeric fields', () => {
-      const validate = ajv.compile(LIST_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(LIST_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const output = {
-        codebases: [
+        knowledgebases: [
           {
             name: 'test',
             path: '/test',
@@ -445,13 +445,13 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should enforce enum values on documentType parameter', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ query: 'test', documentType: 'markdown' })).toBe(true);
       expect(validate({ query: 'test', documentType: 'invalid' })).toBe(false);
     });
 
     it('should enforce range on similarityScore', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.outputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.outputSchema);
       const createOutput = (score: number) => ({
         results: [
           {
@@ -462,7 +462,7 @@ describe('MCP Tool Schemas', () => {
             chunkType: 'function',
             content: 'test',
             similarityScore: score,
-            codebaseName: 'test',
+            knowledgebaseName: 'test',
           },
         ],
         totalResults: 1,
@@ -477,7 +477,7 @@ describe('MCP Tool Schemas', () => {
     });
 
     it('should enforce range on maxResults', () => {
-      const validate = ajv.compile(SEARCH_CODEBASES_SCHEMA.inputSchema);
+      const validate = ajv.compile(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema);
       expect(validate({ query: 'test', maxResults: 0 })).toBe(false);
       expect(validate({ query: 'test', maxResults: 1 })).toBe(true);
       expect(validate({ query: 'test', maxResults: 50 })).toBe(true);

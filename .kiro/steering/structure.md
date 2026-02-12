@@ -40,12 +40,12 @@ Each domain contains:
 - Domain models/types
 - `__tests__/` directory with unit and property tests
 
-Planned domains:
-- `codebase/` - Codebase CRUD operations
+Current domains:
+- `knowledgebase/` - Knowledge base CRUD operations
 - `search/` - Semantic search functionality
 - `ingestion/` - File scanning and indexing
 - `embedding/` - Embedding generation
-- `parsing/` - Tree-sitter code parsing
+- `document/` - Document conversion and chunking
 
 ### Infrastructure (`src/infrastructure/`)
 External system integrations:
@@ -66,7 +66,7 @@ Web interface components:
 ## Configuration Files
 
 - `.gitignore` - Git ignore patterns (node_modules, dist, local data)
-- `package.json` - npm package manifest with name `@teknologika/mcp-codebase-search`
+- `package.json` - npm package manifest with name `@teknologika/mcp-local-knowledge`
 - `tsconfig.json` - TypeScript compiler configuration for Node.js 23+
 - `.eslintrc.json` - ESLint rules for code quality
 - `vitest.config.ts` - Test runner configuration with coverage thresholds
@@ -75,7 +75,7 @@ Web interface components:
 ## Conventions
 
 ### File Naming
-- Source files: `kebab-case.ts` (e.g., `codebase.service.ts`)
+- Source files: `kebab-case.ts` (e.g., `knowledgebase.service.ts`)
 - Test files: `*.test.ts` for unit tests, `*.properties.test.ts` for property-based tests
 - Type files: `types.ts` or `index.ts` for exports
 
@@ -99,4 +99,4 @@ Web interface components:
 - `src/shared/` - Shared utilities and cross-cutting concerns
 - `src/ui/` - Web interface components
 - `dist/` - Compiled JavaScript output (created by `npm run build`)
-- `.codebase-memory/` - Local data storage (gitignored, created at runtime)
+- `.knowledge-base/` - Local data storage (gitignored, created at runtime)

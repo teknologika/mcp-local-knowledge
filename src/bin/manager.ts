@@ -19,7 +19,7 @@ import { loadConfig } from '../shared/config/index.js';
 import { createLogger } from '../shared/logging/index.js';
 import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 import { HuggingFaceEmbeddingService } from '../domains/embedding/index.js';
-import { KnowledgeBaseService } from '../domains/knowledgebase/knowledgebase.service.jsce.js';
+import { KnowledgeBaseService } from '../domains/knowledgebase/knowledgebase.service.js';
 import { SearchService } from '../domains/search/search.service.js';
 import { IngestionService } from '../domains/ingestion/ingestion.service.js';
 import { FastifyServer } from '../infrastructure/fastify/fastify-server.js';

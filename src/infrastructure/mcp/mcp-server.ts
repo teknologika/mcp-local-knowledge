@@ -19,16 +19,16 @@ import addFormatsModule from 'ajv-formats';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { Config } from '../../shared/types/index.js';
-import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.jsce.js';
+import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.js';
 import type { SearchService } from '../../domains/search/search.service.js';
 import {
   ALL_TOOL_SCHEMAS,
-  LIST_CODEBASES_SCHEMA,
-  SEARCH_CODEBASES_SCHEMA,
-  GET_CODEBASE_STATS_SCHEMA,
-  OPEN_CODEBASE_MANAGER_SCHEMA,
-  type SearchCodebasesInput,
-  type GetCodebaseStatsInput,
+  LIST_KNOWLEDGEBASES_SCHEMA,
+  SEARCH_KNOWLEDGEBASES_SCHEMA,
+  GET_KNOWLEDGEBASE_STATS_SCHEMA,
+  OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA,
+  type SearchKnowledgebasesInput,
+  type GetKnowledgebaseStatsInput,
 } from './tool-schemas.js';
 
 // Silent logger for MCP server - no logging to avoid interfering with stdio JSON-RPC
@@ -62,16 +62,16 @@ enum MCPErrorCode {
 export class MCPServer {
   private server: Server;
   private ajv: InstanceType<typeof Ajv>;
-  private codebaseService: KnowledgeBaseService;
+  private knowledgeBaseService: KnowledgeBaseService;
   private searchService: SearchService;
   private config: Config;
 
   constructor(
-    codebaseService: KnowledgeBaseService,
+    knowledgeBaseService: KnowledgeBaseService,
     searchService: SearchService,
     config: Config
   ) {
-    this.codebaseService = codebaseService;
+    this.knowledgeBaseService = knowledgeBaseService;
     this.searchService = searchService;
     this.config = config;
 
@@ -82,7 +82,7 @@ export class MCPServer {
     // Create MCP server
     this.server = new Server(
       {
-        name: '@teknologika/mcp-codebase-search',
+        name: '@teknologika/mcp-local-knowledge',
         version: '0.1.0',
       },
       {
@@ -118,14 +118,14 @@ export class MCPServer {
       try {
         // Route to appropriate tool handler
         switch (toolName) {
-          case 'list_codebases':
-            return await this.handleListCodebases(args);
-          case 'search_codebases':
-            return await this.handleSearchCodebases(args);
-          case 'get_codebase_stats':
-            return await this.handleGetCodebaseStats(args);
-          case 'open_codebase_manager':
-            return await this.handleOpenCodebaseManager(args);
+          case 'list_knowledgebases':
+            return await this.handleListKnowledgebases(args);
+          case 'search_knowledgebases':
+            return await this.handleSearchKnowledgebases(args);
+          case 'get_knowledgebase_stats':
+            return await this.handleGetKnowledgebaseStats(args);
+          case 'open_knowledgebase_manager':
+            return await this.handleOpenKnowledgebaseManager(args);
           default:
             throw this.createError(
               MCPErrorCode.TOOL_NOT_FOUND,
@@ -149,38 +149,38 @@ export class MCPServer {
   }
 
   /**
-   * Handle list_codebases tool call
+   * Handle list_knowledgebases tool call
    */
-  private async handleListCodebases(args: unknown) {
+  private async handleListKnowledgebases(args: unknown) {
     // Validate input
-    this.validateInput(LIST_CODEBASES_SCHEMA.inputSchema, args);
+    this.validateInput(LIST_KNOWLEDGEBASES_SCHEMA.inputSchema, args);
 
     // Call service
-    const codebases = await this.codebaseService.listKnowledgeBases();
+    const knowledgebases = await this.knowledgeBaseService.listKnowledgeBases();
 
     // Format response
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ codebases }, null, 2),
+          text: JSON.stringify({ knowledgebases }, null, 2),
         },
       ],
     };
   }
 
   /**
-   * Handle search_codebases tool call
+   * Handle search_knowledgebases tool call
    */
-  private async handleSearchCodebases(args: unknown) {
+  private async handleSearchKnowledgebases(args: unknown) {
     // Validate input
-    this.validateInput(SEARCH_CODEBASES_SCHEMA.inputSchema, args);
-    const input = args as SearchCodebasesInput;
+    this.validateInput(SEARCH_KNOWLEDGEBASES_SCHEMA.inputSchema, args);
+    const input = args as SearchKnowledgebasesInput;
 
     // Call service
     const results = await this.searchService.search({
       query: input.query,
-      knowledgeBaseName: input.codebaseName,
+      knowledgeBaseName: input.knowledgebaseName,
       documentType: input.documentType,
       maxResults: input.maxResults,
     });
@@ -197,16 +197,16 @@ export class MCPServer {
   }
 
   /**
-   * Handle get_codebase_stats tool call
+   * Handle get_knowledgebase_stats tool call
    */
-  private async handleGetCodebaseStats(args: unknown) {
+  private async handleGetKnowledgebaseStats(args: unknown) {
     // Validate input
-    this.validateInput(GET_CODEBASE_STATS_SCHEMA.inputSchema, args);
-    const input = args as GetCodebaseStatsInput;
+    this.validateInput(GET_KNOWLEDGEBASE_STATS_SCHEMA.inputSchema, args);
+    const input = args as GetKnowledgebaseStatsInput;
 
     try {
       // Call service
-      const stats = await this.codebaseService.getKnowledgeBaseStats(input.name);
+      const stats = await this.knowledgeBaseService.getKnowledgeBaseStats(input.name);
 
       // Format response
       return {
@@ -233,11 +233,11 @@ export class MCPServer {
   }
 
   /**
-   * Handle open_codebase_manager tool call
+   * Handle open_knowledgebase_manager tool call
    */
-  private async handleOpenCodebaseManager(args: unknown) {
+  private async handleOpenKnowledgebaseManager(args: unknown) {
     // Validate input
-    this.validateInput(OPEN_CODEBASE_MANAGER_SCHEMA.inputSchema, args);
+    this.validateInput(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.inputSchema, args);
 
     const url = `http://${this.config.server.host}:${this.config.server.port}`;
 
@@ -313,7 +313,7 @@ export class MCPServer {
     const { spawn } = await import('node:child_process');
     
     // Find the manager command
-    const managerCommand = 'mcp-codebase-manager';
+    const managerCommand = 'mcp-knowledge-manager';
     
     // Spawn the manager server as a detached background process
     const child = spawn(managerCommand, [], {

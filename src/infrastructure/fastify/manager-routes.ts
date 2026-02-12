@@ -4,12 +4,16 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.jsce.js';
+import type { MultipartFile } from '@fastify/multipart';
+import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.js';
 import type { SearchService } from '../../domains/search/search.service.js';
 import type { IngestionService } from '../../domains/ingestion/ingestion.service.js';
 import type { Config } from '../../shared/types/index.js';
 import { createLogger } from '../../shared/logging/index.js';
 import { randomUUID } from 'node:crypto';
+import { writeFile, unlink, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const rootLogger = createLogger('info');
 const logger = rootLogger.child('ManagerRoutes');
@@ -429,6 +433,111 @@ export async function registerManagerRoutes(
       (request as any).flash('message', `Delete failed: ${error instanceof Error ? error.message : String(error)}`);
       (request as any).flash('messageType', 'error');
       return reply.redirect('/');
+    }
+  });
+
+  /**
+   * POST /api/upload/file
+   * Upload single file to knowledge base
+   */
+  fastify.post('/api/upload/file', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Get multipart data
+      const data = await request.file();
+      
+      if (!data) {
+        return reply.status(400).send({
+          error: 'No file provided'
+        });
+      }
+      
+      // Get knowledge base name from fields
+      const knowledgeBaseName = data.fields.knowledgeBaseName?.value as string;
+      
+      if (!knowledgeBaseName) {
+        return reply.status(400).send({
+          error: 'Knowledge base name is required'
+        });
+      }
+      
+      // Validate file type
+      const filename = data.filename;
+      const ext = '.' + filename.split('.').pop()?.toLowerCase();
+      const supportedExtensions = [
+        '.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls',
+        '.html', '.htm', '.md', '.markdown', '.txt',
+        '.mp3', '.wav', '.m4a', '.flac'
+      ];
+      
+      if (!supportedExtensions.includes(ext)) {
+        return reply.status(400).send({
+          error: `Unsupported file type: ${ext}. Supported: ${supportedExtensions.join(', ')}`
+        });
+      }
+      
+      // Validate file size (10MB max)
+      const buffer = await data.toBuffer();
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (buffer.length > maxSize) {
+        return reply.status(400).send({
+          error: `File size exceeds 10MB limit (${Math.round(buffer.length / 1024 / 1024)}MB)`
+        });
+      }
+      
+      // Verify knowledge base exists
+      const kb = await codebaseService.getKnowledgeBase(knowledgeBaseName);
+      if (!kb) {
+        return reply.status(404).send({
+          error: `Knowledge base not found: ${knowledgeBaseName}`
+        });
+      }
+      
+      // Create temp directory if it doesn't exist
+      const tempDir = join(tmpdir(), 'mcp-knowledge-uploads');
+      await mkdir(tempDir, { recursive: true });
+      
+      // Save file to temp location
+      const tempFilePath = join(tempDir, `${randomUUID()}-${filename}`);
+      await writeFile(tempFilePath, buffer);
+      
+      logger.info('File uploaded to temp location', { filename, tempFilePath, size: buffer.length });
+      
+      try {
+        // Process the file through ingestion service
+        await ingestionService.ingestFiles({
+          files: [tempFilePath],
+          knowledgeBaseName,
+          config
+        });
+        
+        logger.info('File processed successfully', { filename, knowledgeBaseName });
+        
+        // Clean up temp file
+        await unlink(tempFilePath).catch(err => {
+          logger.warn('Failed to delete temp file', err instanceof Error ? err : new Error(String(err)), { tempFilePath });
+        });
+        
+        return reply.send({
+          success: true,
+          filename,
+          knowledgeBaseName
+        });
+        
+      } catch (error) {
+        // Clean up temp file on error
+        await unlink(tempFilePath).catch(err => {
+          logger.warn('Failed to delete temp file after error', err instanceof Error ? err : new Error(String(err)), { tempFilePath });
+        });
+        
+        throw error;
+      }
+      
+    } catch (error) {
+      logger.error('File upload failed', error instanceof Error ? error : new Error(String(error)));
+      return reply.status(500).send({
+        error: `Upload failed: ${error instanceof Error ? error.message : String(error)}`
+      });
     }
   });
 

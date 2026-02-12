@@ -11,10 +11,11 @@ import fastifySession from '@fastify/session';
 import fastifyFlash from '@fastify/flash';
 import fastifyCookie from '@fastify/cookie';
 import fastifyFormbody from '@fastify/formbody';
+import fastifyMultipart from '@fastify/multipart';
 import handlebars from 'handlebars';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.jsce.js';
+import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.js';
 import type { SearchService } from '../../domains/search/search.service.js';
 import type { IngestionService } from '../../domains/ingestion/ingestion.service.js';
 import type { Config } from '../../shared/types/index.js';
@@ -93,6 +94,14 @@ export class FastifyServer {
 
     // Register form body parser (for POST forms)
     this.fastify.register(fastifyFormbody);
+
+    // Register multipart support (for file uploads)
+    this.fastify.register(fastifyMultipart, {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB max file size
+        files: 1, // 1 file per request
+      },
+    });
 
     // Register cookie support (required for session)
     this.fastify.register(fastifyCookie);

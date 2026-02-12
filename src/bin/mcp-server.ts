@@ -16,7 +16,7 @@
 import { loadConfig } from '../shared/config/index.js';
 import { LanceDBClientWrapper } from '../infrastructure/lancedb/lancedb.client.js';
 import { HuggingFaceEmbeddingService } from '../domains/embedding/index.js';
-import { KnowledgeBaseService } from '../domains/knowledgebase/knowledgebase.service.jsce.js';
+import { KnowledgeBaseService } from '../domains/knowledgebase/knowledgebase.service.js';
 import { SearchService } from '../domains/search/search.service.js';
 import { MCPServer } from '../infrastructure/mcp/mcp-server.js';
 
@@ -70,7 +70,7 @@ async function main() {
     // Don't initialize yet - let it initialize on first use to avoid blocking startup
 
     // Initialize knowledge base service
-    const codebaseService = new KnowledgeBaseService(lanceClient, config);
+    const knowledgeBaseService = new KnowledgeBaseService(lanceClient, config);
 
     // Initialize search service
     const searchService = new SearchService(
@@ -80,7 +80,7 @@ async function main() {
     );
 
     // Create and start MCP server
-    const mcpServer = new MCPServer(codebaseService, searchService, config);
+    const mcpServer = new MCPServer(knowledgeBaseService, searchService, config);
 
     // Setup graceful shutdown
     const shutdown = async (_signal: string) => {

@@ -40,12 +40,14 @@ The Local Knowledge MCP Server enables AI assistants to search and retrieve info
 - 🔍 **Semantic Search**: Find information by meaning, not just keywords
 - 📄 **Multi-Format Support**: PDF, DOCX, PPTX, XLSX, HTML, Markdown, text, audio
 - 🤖 **MCP Integration**: Seamless integration with MCP-compatible AI assistants (Claude Desktop, etc.)
-- 🧠 **Smart Chunking**: Structure-aware chunking preserves document hierarchy
-- 🖥️ **Web Management UI**: Manage knowledge bases through a web interface
+- 🧠 **Smart Chunking**: Structure-aware document chunking preserves context and hierarchy
+- 📝 **Docling Integration**: Powerful document conversion with OCR support for scanned PDFs
+- 🖥️ **Web Management UI**: Manage knowledge bases through a browser interface
 - ⚡ **Performance Optimized**: Sub-500ms search responses with intelligent caching
-- 🎯 **Smart Filtering**: Filter by document type, exclude test files
-- 📊 **Detailed Statistics**: Track chunk counts, file counts, and document type distribution
+- 🎯 **Smart Filtering**: Filter by document type, exclude test documents
+- 📊 **Detailed Statistics**: Track chunk counts, document counts, and format distribution
 - 🔄 **Gitignore Support**: Respects .gitignore patterns during ingestion
+- 🎤 **Audio Transcription**: Automatic transcription of audio files using Whisper ASR
 
 
 ## Installation
@@ -120,7 +122,8 @@ Path: /Users/dev/documents/my-documents
 Supported formats: PDF, DOCX, PPTX, XLSX, HTML, Markdown, Text, Audio
 
 Scanning directory: [████████████████████] 100% (234/234)
-Processing documents: [████████████████████] 100% (200/200)
+Converting documents: [████████████████████] 100% (200/200)
+Chunking documents: [████████████████████] 100% (200/200)
 Generating embeddings: [████████████████████] 100% (1,234/1,234)
 Storing chunks: [████████████████████] 100% (1,234/1,234)
 
@@ -250,37 +253,37 @@ The server runs in stdio mode and communicates with MCP clients via standard inp
 
 ##### 1. `list_knowledgebases`
 
-Lists all indexed codebases with metadata.
+Lists all indexed knowledge bases with metadata.
 
 **Input:** None
 
 **Output:**
 ```json
 {
-  "codebases": [
+  "knowledgebases": [
     {
-      "name": "my-project",
-      "path": "/path/to/project",
+      "name": "my-documents",
+      "path": "/path/to/documents",
       "chunkCount": 5678,
-      "fileCount": 1100,
+      "documentCount": 450,
       "lastIngestion": "2024-01-15T10:30:00Z",
-      "languages": ["typescript", "python", "java"]
+      "documentTypes": ["pdf", "docx", "markdown", "text"]
     }
   ]
 }
 ```
 
-##### 2. `search_codebases`
+##### 2. `search_knowledgebases`
 
-Performs semantic search across indexed codebases.
+Performs semantic search across indexed knowledge bases.
 
 **Input:**
 ```json
 {
-  "query": "authentication function",
-  "codebaseName": "my-project",  // Optional
-  "language": "typescript",       // Optional
-  "maxResults": 25                // Optional (default: 50)
+  "query": "project timeline and milestones",
+  "knowledgebaseName": "my-documents",  // Optional
+  "documentType": "pdf",                 // Optional
+  "maxResults": 25                       // Optional (default: 50)
 }
 ```
 
@@ -289,14 +292,14 @@ Performs semantic search across indexed codebases.
 {
   "results": [
     {
-      "filePath": "src/auth/authenticate.ts",
-      "startLine": 15,
-      "endLine": 45,
-      "language": "typescript",
-      "chunkType": "function",
-      "content": "export async function authenticate(credentials: Credentials) { ... }",
+      "filePath": "reports/Q4-2024-Report.pdf",
+      "content": "Project Timeline: The Q4 milestones include...",
+      "documentType": "pdf",
+      "chunkType": "section",
+      "pageNumber": 5,
+      "headingPath": ["Executive Summary", "Project Timeline"],
       "similarityScore": 0.92,
-      "codebaseName": "my-project"
+      "knowledgebaseName": "my-documents"
     }
   ],
   "totalResults": 1,
@@ -304,39 +307,40 @@ Performs semantic search across indexed codebases.
 }
 ```
 
-##### 3. `get_codebase_stats`
+##### 3. `get_knowledgebase_stats`
 
-Retrieves detailed statistics for a specific codebase.
+Retrieves detailed statistics for a specific knowledge base.
 
 **Input:**
 ```json
 {
-  "name": "my-project"
+  "name": "my-documents"
 }
 ```
 
 **Output:**
 ```json
 {
-  "name": "my-project",
-  "path": "/path/to/project",
+  "name": "my-documents",
+  "path": "/path/to/documents",
   "chunkCount": 5678,
-  "fileCount": 1100,
+  "documentCount": 450,
   "lastIngestion": "2024-01-15T10:30:00Z",
-  "languages": [
-    { "language": "typescript", "fileCount": 800, "chunkCount": 3200 },
-    { "language": "python", "fileCount": 200, "chunkCount": 1500 }
+  "documentTypes": [
+    { "type": "pdf", "documentCount": 200, "chunkCount": 3200 },
+    { "type": "docx", "documentCount": 150, "chunkCount": 1500 },
+    { "type": "markdown", "documentCount": 100, "chunkCount": 978 }
   ],
   "chunkTypes": [
-    { "type": "function", "count": 2500 },
-    { "type": "class", "count": 1200 },
-    { "type": "method", "count": 1978 }
+    { "type": "paragraph", "count": 2500 },
+    { "type": "section", "count": 1200 },
+    { "type": "table", "count": 978 }
   ],
   "sizeBytes": 2500000
 }
 ```
 
-##### 4. `open_codebase_manager`
+##### 4. `open_knowledgebase_manager`
 
 Opens the web-based Manager UI in the default browser. Automatically launches the server if it's not already running.
 
@@ -356,38 +360,44 @@ Opens the web-based Manager UI in the default browser. Automatically launches th
 
 ### Manager UI
 
-The Manager UI provides a web-based interface for managing indexed codebases.
+The Manager UI provides a web-based interface for managing indexed knowledge bases.
 
 #### Starting the Manager
 
 ```bash
-mcp-codebase-manager
+mcp-knowledge-manager
 ```
 
 This will:
 1. Start a Fastify server on port 8008 (configurable)
 2. Automatically open `http://localhost:8008` in your default browser
-3. Display all indexed codebases with statistics
+3. Display all indexed knowledge bases with statistics
 
 #### Features
 
 **Search Tab:**
-- Semantic search across all codebases
-- Filter by codebase and max results
-- Exclude test files checkbox
-- Exclude library files checkbox
+- Semantic search across all knowledge bases
+- Filter by knowledge base and max results
+- Filter by document type (PDF, DOCX, etc.)
+- Exclude test documents checkbox
 - Collapsible results with color-coded confidence scores:
   - 🟢 Green (0.80-1.00): Excellent match
   - 🟡 Yellow (0.60-0.79): Good match
   - 🔵 Blue (0.00-0.59): Lower match
 
-**Manage Codebases Tab:**
-- View all indexed codebases
-- See chunk counts, file counts, and last indexed date
-- Add new codebases with real-time progress tracking
-- Rename codebases
-- Remove codebases
+**Manage Knowledge Bases Tab:**
+- View all indexed knowledge bases
+- See chunk counts, document counts, and last indexed date
+- Add new knowledge bases with real-time progress tracking
+- Rename knowledge bases
+- Remove knowledge bases
 - Gitignore filtering checkbox (checked by default)
+
+**Ingest Tab:**
+- Drag-and-drop file upload
+- Folder selection and upload
+- Real-time progress tracking for each file
+- Support for all document formats
 
 **Manager Controls:**
 - Quit Manager button with confirmation dialog (stops server and closes browser tab)
@@ -402,11 +412,11 @@ The system can be configured using a JSON configuration file. The default locati
 ```json
 {
   "lancedb": {
-    "persistPath": "~/.codebase-memory/lancedb"
+    "persistPath": "~/.knowledge-base/lancedb"
   },
   "embedding": {
     "modelName": "Xenova/all-MiniLM-L6-v2",
-    "cachePath": "~/.codebase-memory/models"
+    "cachePath": "~/.knowledge-base/models"
   },
   "server": {
     "port": 8008,
@@ -418,11 +428,17 @@ The system can be configured using a JSON configuration file. The default locati
   },
   "ingestion": {
     "batchSize": 100,
-    "maxFileSize": 1048576
+    "maxFileSize": 10485760
   },
   "search": {
     "defaultMaxResults": 50,
     "cacheTimeoutSeconds": 60
+  },
+  "document": {
+    "conversionTimeout": 30000,
+    "maxTokens": 512,
+    "chunkSize": 1000,
+    "chunkOverlap": 200
   },
   "logging": {
     "level": "info"
@@ -437,14 +453,14 @@ The system can be configured using a JSON configuration file. The default locati
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `persistPath` | Directory for LanceDB storage | `~/.codebase-memory/lancedb` |
+| `persistPath` | Directory for LanceDB storage | `~/.knowledge-base/lancedb` |
 
 #### Embedding Settings
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `modelName` | Hugging Face model for embeddings | `Xenova/all-MiniLM-L6-v2` |
-| `cachePath` | Directory for model cache | `~/.codebase-memory/models` |
+| `cachePath` | Directory for model cache | `~/.knowledge-base/models` |
 
 #### Server Settings
 
@@ -458,8 +474,17 @@ The system can be configured using a JSON configuration file. The default locati
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `batchSize` | Chunks per batch during ingestion | `100` |
-| `maxFileSize` | Maximum file size in bytes | `1048576` (1MB) |
+| `batchSize` | Documents per batch during ingestion | `100` |
+| `maxFileSize` | Maximum file size in bytes | `10485760` (10MB) |
+
+#### Document Settings
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `conversionTimeout` | Document conversion timeout (ms) | `30000` (30s) |
+| `maxTokens` | Maximum tokens per chunk | `512` |
+| `chunkSize` | Fallback chunk size (characters) | `1000` |
+| `chunkOverlap` | Fallback chunk overlap (characters) | `200` |
 
 #### Search Settings
 
@@ -480,10 +505,10 @@ To use a custom configuration file:
 
 ```bash
 # For ingestion
-mcp-codebase-ingest --config ./my-config.json --path ./code --name my-code
+mcp-knowledge-ingest --config ./my-config.json --path ./documents --name my-docs
 
 # For MCP server (via environment variable)
-CONFIG_PATH=./my-config.json mcp-codebase-search
+CONFIG_PATH=./my-config.json mcp-local-knowledge
 ```
 
 ## MCP Client Configuration
@@ -499,8 +524,8 @@ CONFIG_PATH=./my-config.json mcp-codebase-search
 ```json
 {
   "mcpServers": {
-    "codebase-search": {
-      "command": "mcp-codebase-search",
+    "local-knowledge": {
+      "command": "mcp-local-knowledge",
       "args": []
     }
   }
@@ -514,11 +539,11 @@ For other MCP-compatible clients, use the stdio transport:
 ```json
 {
   "mcpServers": {
-    "codebase-search": {
-      "command": "mcp-codebase-search",
+    "local-knowledge": {
+      "command": "mcp-local-knowledge",
       "args": [],
       "env": {
-        "CONFIG_PATH": "~/.codebase-memory/config.json",
+        "CONFIG_PATH": "~/.knowledge-base/config.json",
         "LOG_LEVEL": "info"
       }
     }
@@ -531,42 +556,51 @@ For other MCP-compatible clients, use the stdio transport:
 After configuring your MCP client:
 
 1. Restart the client application
-2. Check that the `codebase-search` server appears in the MCP server list
-3. Try using the `list_codebases` tool to verify connectivity
+2. Check that the `local-knowledge` server appears in the MCP server list
+3. Try using the `list_knowledgebases` tool to verify connectivity
 
-## Supported Languages
+## Supported Document Formats
 
-The system uses Tree-sitter for AST-aware code parsing. Currently supported languages:
+The system uses [Docling](https://github.com/DS4SD/docling) for document conversion and processing. All documents are converted to markdown with structure preservation.
 
-| Language | Extensions | Chunk Types |
-|----------|-----------|-------------|
-| **C#** | `.cs` | class, method, property, interface |
-| **Java** | `.java` | class, method, field, interface |
-| **JavaScript** | `.js`, `.jsx` | function, class, method |
-| **TypeScript** | `.ts`, `.tsx` | function, class, method, interface |
-| **Python** | `.py` | function, class, method |
+| Format | Extensions | Features |
+|--------|-----------|----------|
+| **PDF** | `.pdf` | OCR support for scanned documents, table extraction, image detection |
+| **Word** | `.docx`, `.doc` | Formatting preservation, table extraction, heading hierarchy |
+| **PowerPoint** | `.pptx`, `.ppt` | Slide content extraction, speaker notes, embedded text |
+| **Excel** | `.xlsx`, `.xls` | Table data extraction, sheet names, cell formatting |
+| **HTML** | `.html`, `.htm` | Structure preservation, semantic elements, link extraction |
+| **Markdown** | `.md`, `.markdown` | Native processing, heading hierarchy, code blocks |
+| **Text** | `.txt` | Plain text processing, paragraph detection |
+| **Audio** | `.mp3`, `.wav`, `.m4a`, `.flac` | Automatic transcription using Whisper ASR |
 
 ### What Gets Extracted?
 
-For each supported language, the system extracts:
+For each document, the system extracts:
 
-- **Functions**: Top-level and nested functions
-- **Classes**: Class declarations with their context
-- **Methods**: Class methods and instance methods
-- **Interfaces**: Interface definitions (TypeScript, C#, Java)
-- **Properties**: Class properties (C#)
-- **Fields**: Class fields (Java)
+- **Content**: Full text content converted to markdown
+- **Structure**: Headings, sections, paragraphs, lists
+- **Tables**: Tabular data with formatting
+- **Metadata**: Title, page count, word count, format, images, tables
+- **Context**: Heading hierarchy for each chunk
+- **Page Numbers**: For paginated documents (PDF, DOCX, PPTX)
+
+### Document Chunking
+
+Documents are split into semantic chunks using Docling's HybridChunker:
+
+- **Structure-Aware**: Respects document hierarchy (headings, sections)
+- **Token-Aware**: Configurable max tokens per chunk (default: 512)
+- **Context-Preserved**: Includes heading path for each chunk
+- **Type-Tagged**: Each chunk labeled as paragraph, section, table, heading, list, or code
 
 ### File Classification
 
 The system automatically classifies files during ingestion:
 
-**Test Files** (tagged with `isTestFile: true`):
-- Files ending in `.test.ts`, `.spec.ts`, `_test.py`, etc.
-- Files in `__tests__/`, `test/`, `tests/`, `spec/` directories
-
-**Library Files** (tagged with `isLibraryFile: true`):
-- Files in `node_modules/`, `vendor/`, `dist/`, `build/`, `venv/`, etc.
+**Test Documents** (tagged with `isTest: true`):
+- Files with "test" or "spec" in the path
+- Files in `test/`, `tests/`, `spec/` directories
 
 These tags enable filtering in search results.
 
@@ -587,55 +621,60 @@ These tags enable filtering in search results.
 ┌──────▼────────────────▼────────────────────▼───────────────┐
 │                   Core Services                             │
 ├─────────────┬──────────────┬──────────────┬────────────────┤
-│  Codebase   │    Search    │  Ingestion   │   Embedding    │
-│  Service    │   Service    │   Service    │    Service     │
+│ Knowledge   │    Search    │  Ingestion   │   Embedding    │
+│   Base      │   Service    │   Service    │    Service     │
+│  Service    │              │              │                │
 └──────┬──────┴──────┬───────┴──────┬───────┴────────┬───────┘
        │             │              │                │
        │             │              │                │
 ┌──────▼─────────────▼──────────────▼────────────────▼───────┐
 │                   Storage & External                        │
 ├──────────────┬──────────────────┬─────────────────────────┤
-│   LanceDB    │  Tree-sitter     │  Hugging Face           │
-│ (Vector DB)  │  (Code Parsing)  │  (Embeddings)           │
+│   LanceDB    │  Docling SDK     │  Hugging Face           │
+│ (Vector DB)  │  (Doc Convert)   │  (Embeddings)           │
 └──────────────┴──────────────────┴─────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-**MCP Server** (`mcp-codebase-search`)
+**MCP Server** (`mcp-local-knowledge`)
 - Exposes tools via Model Context Protocol
 - Validates inputs and outputs
 - Handles stdio communication
 
-**Ingestion CLI** (`mcp-codebase-ingest`)
+**Ingestion CLI** (`mcp-knowledge-ingest`)
 - Scans directories recursively
 - Respects .gitignore patterns
-- Parses code with Tree-sitter
-- Classifies test and library files
+- Converts documents with Docling
+- Chunks documents with HybridChunker
+- Classifies test documents
 - Generates embeddings
 - Stores chunks in LanceDB
 
-**Manager UI** (`mcp-codebase-manager`)
+**Manager UI** (`mcp-knowledge-manager`)
 - Fastify web server with SSR
 - Real-time ingestion progress via SSE
 - Search interface with filters
-- Codebase management
+- Knowledge base management
+- File upload with drag-and-drop
 
 **Core Services**
-- **Codebase Service**: CRUD operations for codebases
+- **Knowledge Base Service**: CRUD operations for knowledge bases
 - **Search Service**: Semantic search with filtering and caching
-- **Ingestion Service**: Orchestrates indexing pipeline
+- **Ingestion Service**: Orchestrates document processing pipeline
 - **Embedding Service**: Generates vector embeddings locally
+- **Document Converter**: Converts documents to markdown via Docling
+- **Document Chunker**: Splits documents into semantic chunks
 
 ### Data Flow
 
 #### Ingestion Flow
 
 ```
-Source Code → File Scanner → Tree-sitter Parser → Chunks
-                                                      ↓
-                                            File Classifier
-                                                      ↓
+Documents → File Scanner → Document Converter (Docling) → Markdown
+                                                              ↓
+                                                    Document Chunker
+                                                              ↓
 LanceDB ← Embeddings ← Embedding Service ← Tagged Chunks
 ```
 
@@ -646,7 +685,7 @@ Query → Embedding Service → Vector
                               ↓
                          LanceDB Search
                               ↓
-                         Apply Filters (tests, libraries)
+                         Apply Filters (document type, tests)
                               ↓
                          Ranked Results → Format → Response
 ```
@@ -654,25 +693,25 @@ Query → Embedding Service → Vector
 ### Storage Schema
 
 **LanceDB Tables:**
-- Table naming: `codebase_{name}_{schemaVersion}`
-- Example: `codebase_my-project_1_0_0`
+- Table naming: `kb_{name}_{schemaVersion}`
+- Example: `kb_my-documents_1_0_0`
 
 **Row Structure:**
 ```json
 {
-  "id": "my-project_2024-01-15T10:30:00Z_0",
+  "id": "my-documents_2024-01-15T10:30:00Z_0",
   "vector": [0.1, 0.2, ...],
-  "content": "export async function authenticate(...) { ... }",
-  "filePath": "src/auth.ts",
-  "startLine": 15,
-  "endLine": 45,
-  "language": "typescript",
-  "chunkType": "function",
-  "isTestFile": false,
-  "isLibraryFile": false,
+  "content": "Project Timeline: The Q4 milestones include...",
+  "filePath": "reports/Q4-2024-Report.pdf",
+  "documentType": "pdf",
+  "chunkType": "section",
+  "chunkIndex": 5,
+  "pageNumber": 5,
+  "headingPath": ["Executive Summary", "Project Timeline"],
+  "isTest": false,
   "ingestionTimestamp": "2024-01-15T10:30:00Z",
-  "_codebaseName": "my-project",
-  "_path": "/path/to/project",
+  "_knowledgebaseName": "my-documents",
+  "_path": "/path/to/documents",
   "_lastIngestion": "2024-01-15T10:30:00Z"
 }
 ```
@@ -681,17 +720,17 @@ Query → Embedding Service → Vector
 
 ### Common Issues
 
-#### 1. "Command not found: mcp-codebase-search"
+#### 1. "Command not found: mcp-local-knowledge"
 
 **Problem:** The package is not installed globally or not in PATH.
 
 **Solution:**
 ```bash
 # Reinstall globally
-npm install -g @teknologika/mcp-codebase-search
+npm install -g @teknologika/mcp-local-knowledge
 
 # Or use npx
-npx mcp-codebase-search
+npx mcp-local-knowledge
 ```
 
 #### 2. "Failed to initialize LanceDB"
@@ -701,13 +740,13 @@ npx mcp-codebase-search
 **Solution:**
 ```bash
 # Check permissions
-ls -la ~/.codebase-memory/lancedb
+ls -la ~/.knowledge-base/lancedb
 
 # Reset LanceDB (WARNING: deletes all data)
-rm -rf ~/.codebase-memory/lancedb
+rm -rf ~/.knowledge-base/lancedb
 
-# Re-ingest codebases
-mcp-codebase-ingest --path ./my-project --name my-project
+# Re-ingest knowledge bases
+mcp-knowledge-ingest --path ./my-documents --name my-documents
 ```
 
 #### 3. "Embedding model download failed"
@@ -717,28 +756,28 @@ mcp-codebase-ingest --path ./my-project --name my-project
 **Solution:**
 ```bash
 # Check disk space
-df -h ~/.codebase-memory
+df -h ~/.knowledge-base
 
 # Clear model cache and retry
-rm -rf ~/.codebase-memory/models
+rm -rf ~/.knowledge-base/models
 
 # Run ingestion again (will re-download)
-mcp-codebase-ingest --path ./my-project --name my-project
+mcp-knowledge-ingest --path ./my-documents --name my-documents
 ```
 
 #### 4. "Search returns no results"
 
-**Problem:** Codebase not indexed or query too specific.
+**Problem:** Knowledge base not indexed or query too specific.
 
 **Solution:**
 ```bash
-# Verify codebase is indexed
-mcp-codebase-manager
-# Check the UI for your codebase
+# Verify knowledge base is indexed
+mcp-knowledge-manager
+# Check the UI for your knowledge base
 
 # Try broader queries
-# Instead of: "validateEmailAddress"
-# Try: "email validation function"
+# Instead of: "Q4 2024 financial projections table"
+# Try: "financial projections" or "quarterly report"
 ```
 
 #### 5. "Manager UI won't open"
@@ -751,7 +790,7 @@ mcp-codebase-manager
 lsof -i :8008
 
 # Kill the process or use a different port
-# Edit ~/.codebase-memory/config.json
+# Edit ~/.knowledge-base/config.json
 {
   "server": {
     "port": 8009
@@ -766,7 +805,7 @@ lsof -i :8008
 **Solution:**
 ```bash
 # Test server manually
-mcp-codebase-search
+mcp-local-knowledge
 
 # Verify configuration path
 cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
@@ -1069,15 +1108,15 @@ gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
 export NODE_OPTIONS="--max-old-space-size=4096"
 
 # Then run ingestion
-mcp-codebase-ingest --path ./docs --name my-docs
+mcp-knowledge-ingest --path ./docs --name my-docs
 ```
 
 **Process documents in smaller batches:**
 ```bash
 # Instead of ingesting entire directory at once
 # Process subdirectories separately
-mcp-codebase-ingest --path ./docs/section1 --name my-docs
-mcp-codebase-ingest --path ./docs/section2 --name my-docs
+mcp-knowledge-ingest --path ./docs/section1 --name my-docs
+mcp-knowledge-ingest --path ./docs/section2 --name my-docs
 ```
 
 **Optimize document files:**
@@ -1096,10 +1135,10 @@ libreoffice --headless --convert-to pdf document.docx
 ```bash
 # Check memory usage during ingestion
 # macOS
-top -pid $(pgrep -f mcp-codebase-ingest)
+top -pid $(pgrep -f mcp-knowledge-ingest)
 
 # Linux
-htop -p $(pgrep -f mcp-codebase-ingest)
+htop -p $(pgrep -f mcp-knowledge-ingest)
 
 # Windows
 # Use Task Manager or Resource Monitor
@@ -1243,11 +1282,11 @@ npm run typecheck
 src/
 ├── bin/                    # Entry points (mcp-server, ingest, manager)
 ├── domains/                # Domain-specific business logic
-│   ├── codebase/          # Codebase CRUD operations
+│   ├── knowledgebase/     # Knowledge base CRUD operations
 │   ├── search/            # Semantic search functionality
 │   ├── ingestion/         # File scanning and indexing
 │   ├── embedding/         # Embedding generation
-│   └── parsing/           # Tree-sitter code parsing
+│   └── document/          # Document conversion and chunking
 ├── infrastructure/         # External integrations
 │   ├── lancedb/           # LanceDB client wrapper
 │   ├── mcp/               # MCP server implementation
@@ -1292,12 +1331,12 @@ npm run clean && npm run build
 npm pack
 
 # Install package globally for testing
-npm install -g ./teknologika-mcp-codebase-search-0.1.0.tgz
+npm install -g ./teknologika-mcp-local-knowledge-1.0.0.tgz
 
 # Test commands
-mcp-codebase-search --version
-mcp-codebase-ingest --help
-mcp-codebase-manager
+mcp-local-knowledge --version
+mcp-knowledge-ingest --help
+mcp-knowledge-manager
 ```
 
 ## Contributing
@@ -1350,14 +1389,16 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Areas for Contribution
 
-- 🌐 **Language support**: Add more Tree-sitter grammars
+- 📄 **Document format support**: Add more format handlers
 - ⚡ **Performance**: Optimize search and ingestion
 - 🎨 **UI improvements**: Enhance the Manager UI
 - 📚 **Documentation**: Improve guides and examples
 - 🧪 **Testing**: Increase test coverage
 - 🐛 **Bug fixes**: Fix reported issues
 - 🔍 **Search improvements**: Better ranking algorithms
-- 🏷️ **File classification**: More patterns for test/library detection
+- 🏷️ **Document classification**: More patterns for test document detection
+- 🎤 **Audio processing**: Improve transcription quality
+- 📊 **Analytics**: Add usage statistics and insights
 
 ## Security
 
@@ -1411,12 +1452,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - [Model Context Protocol](https://modelcontextprotocol.io/) - MCP specification
 - [LanceDB](https://lancedb.com/) - Vector database
-- [Tree-sitter](https://tree-sitter.github.io/) - Code parsing
+- [Docling](https://github.com/DS4SD/docling) - Document conversion
 - [Hugging Face](https://huggingface.co/) - Embedding models
 - [Fastify](https://www.fastify.io/) - Web framework
 
 ---
 
-**Questions or Issues?** Open an issue on [GitHub](https://github.com/teknologika/mcp-codebase-search/issues)
+**Questions or Issues?** Open an issue on [GitHub](https://github.com/teknologika/mcp-local-knowledge/issues)
 
 **Need Help?** Check the [Troubleshooting](#troubleshooting) section above

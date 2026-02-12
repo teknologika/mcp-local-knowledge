@@ -156,16 +156,16 @@
 - [x] 5.1.10 Add document-specific metadata fields
 
 ### 5.2 Update MCP Server Implementation
-- [~] 5.2.1 Update tool handlers in mcp-server.ts
-- [~] 5.2.2 Update error messages
-- [~] 5.2.3 Update logging
-- [~] 5.2.4 Update tool descriptions for AI assistants
+- [x] 5.2.1 Update tool handlers in mcp-server.ts
+- [x] 5.2.2 Update error messages
+- [x] 5.2.3 Update logging
+- [x] 5.2.4 Update tool descriptions for AI assistants
 
 ### 5.3 Update MCP Tests
-- [~] 5.3.1 Update tool schema tests
-- [~] 5.3.2 Update integration tests
-- [~] 5.3.3 Test renamed tools
-- [~] 5.3.4 Test new schemas
+- [x] 5.3.1 Update tool schema tests
+- [x] 5.3.2 Update integration tests
+- [x] 5.3.3 Test renamed tools
+- [x] 5.3.4 Test new schemas
 
 ## Phase 6: Update Search Service
 
@@ -177,9 +177,9 @@
 - [x] 6.1.5 Keep filtering logic for test files
 
 ### 6.2 Update Search Tests
-- [~] 6.2.1 Test document type filtering
-- [~] 6.2.2 Test search with new metadata
-- [~] 6.2.3 Test result formatting
+- [x] 6.2.1 Test document type filtering
+- [x] 6.2.2 Test search with new metadata
+- [x] 6.2.3 Test result formatting
 
 ## Phase 7: Update CLI Tools
 
@@ -209,86 +209,86 @@
 - [x] 8.1.3 Update tab labels in index.hbs
 - [x] 8.1.4 Update search interface in index.hbs
 - [x] 8.1.5 Update manage interface in index.hbs
-- [~] 8.1.6 Add file upload section in index.hbs
+- [x] 8.1.6 Add file upload section in index.hbs
 
 ### 8.2 Add File Upload UI
-- [~] 8.2.1 Create drag-and-drop zone for files
-- [~] 8.2.2 Add file input for single file selection
-- [~] 8.2.3 Add folder input for folder selection
-- [~] 8.2.4 Add file list with remove buttons
-- [~] 8.2.5 Add upload progress indicators
-- [~] 8.2.6 Add success/error messages
-- [~] 8.2.7 Add file type validation (client-side)
-- [~] 8.2.8 Add file size warnings
-- [~] 8.2.9 Add upload queue management
+- [x] 8.2.1 Create drag-and-drop zone for files
+- [x] 8.2.2 Add file input for single file selection
+- [x] 8.2.3 Add folder input for folder selection
+- [x] 8.2.4 Add file list with remove buttons
+- [x] 8.2.5 Add upload progress indicators
+- [x] 8.2.6 Add success/error messages
+- [x] 8.2.7 Add file type validation (client-side)
+- [x] 8.2.8 Add file size warnings
+- [x] 8.2.9 Add upload queue management
 
 ### 8.3 Update Manager Routes
-- [~] 8.3.1 Add /api/upload/file endpoint in manager-routes.ts
-- [~] 8.3.2 Add /api/upload/folder endpoint
-- [~] 8.3.3 Add /api/upload/progress/:uploadId endpoint (SSE)
-- [~] 8.3.4 Handle file uploads with multipart/form-data
-- [~] 8.3.5 Process uploaded files
-- [~] 8.3.6 Return progress updates
-- [~] 8.3.7 Add file validation (server-side)
-- [~] 8.3.8 Add temporary file cleanup
-- [~] 8.3.9 Add upload session management
+- [x] 8.3.1 Add /api/upload/file endpoint in manager-routes.ts
+- [x] 8.3.2 Add /api/upload/folder endpoint
+- [x] 8.3.3 Add /api/upload/progress/:uploadId endpoint (SSE)
+- [x] 8.3.4 Handle file uploads with multipart/form-data
+- [x] 8.3.5 Process uploaded files
+- [x] 8.3.6 Return progress updates
+- [x] 8.3.7 Add file validation (server-side)
+- [x] 8.3.8 Add temporary file cleanup
+- [x] 8.3.9 Add upload session management
 
 ### 8.4 Update Manager JavaScript
-- [~] 8.4.1 Add drag-and-drop handlers in manager.js
-- [~] 8.4.2 Add file input handlers
-- [~] 8.4.3 Add folder input handlers
-- [~] 8.4.4 Add upload queue management
-- [~] 8.4.5 Add progress tracking
-- [~] 8.4.6 Add SSE connection for progress
-- [~] 8.4.7 Update search to use new API
-- [~] 8.4.8 Update manage to use new API
+- [x] 8.4.1 Add drag-and-drop handlers in manager.js
+- [x] 8.4.2 Add file input handlers
+- [x] 8.4.3 Add folder input handlers
+- [x] 8.4.4 Add upload queue management
+- [x] 8.4.5 Add progress tracking
+- [x] 8.4.6 Add SSE connection for progress
+- [x] 8.4.7 Update search to use new API
+- [x] 8.4.8 Update manage to use new API
 
 ### 8.5 Update Manager CSS
-- [~] 8.5.1 Style drag-and-drop zone in manager.css
-- [~] 8.5.2 Style file upload UI
-- [~] 8.5.3 Style progress indicators
-- [~] 8.5.4 Update branding colors if needed
+- [x] 8.5.1 Style drag-and-drop zone in manager.css
+- [x] 8.5.2 Style file upload UI
+- [x] 8.5.3 Style progress indicators
+- [x] 8.5.4 Update branding colors if needed
 
 ### 8.6 Update Manager Tests
-- [~] 8.6.1 Test file upload endpoint
-- [~] 8.6.2 Test folder upload endpoint
-- [~] 8.6.3 Test progress tracking
-- [~] 8.6.4 Test file validation
-- [~] 8.6.5 Test error handling
+- [x] 8.6.1 Test file upload endpoint
+- [x] 8.6.2 Test folder upload endpoint
+- [x] 8.6.3 Test progress tracking
+- [x] 8.6.4 Test file validation
+- [x] 8.6.5 Test error handling
 
 ## Phase 9: Update Documentation
 
 ### 9.1 Update README.md
 - [x] 9.1.1 Update title and description
-- [~] 9.1.2 Update feature list (remove code, add documents)
-- [~] 9.1.3 Update installation instructions
-- [~] 9.1.4 Update quick start guide
-- [~] 9.1.5 Update usage examples
-- [~] 9.1.6 Update MCP client configuration
-- [~] 9.1.7 Remove "Supported Languages" section
-- [~] 9.1.8 Add "Supported Document Formats" section
-- [~] 9.1.9 Update architecture diagrams
-- [~] 9.1.10 Update troubleshooting section
-- [~] 9.1.11 Update all command examples
+- [x] 9.1.2 Update feature list (remove code, add documents)
+- [x] 9.1.3 Update installation instructions
+- [x] 9.1.4 Update quick start guide
+- [x] 9.1.5 Update usage examples
+- [x] 9.1.6 Update MCP client configuration
+- [x] 9.1.7 Remove "Supported Languages" section
+- [x] 9.1.8 Add "Supported Document Formats" section
+- [x] 9.1.9 Update architecture diagrams
+- [x] 9.1.10 Update troubleshooting section
+- [x] 9.1.11 Update all command examples
 
 ### 9.2 Update Configuration Documentation
-- [~] 9.2.1 Document new default paths
-- [~] 9.2.2 Document Python requirements
-- [~] 9.2.3 Document Docling configuration
-- [~] 9.2.4 Add migration guide for existing users
+- [x] 9.2.1 Document new default paths
+- [x] 9.2.2 Document Python requirements
+- [x] 9.2.3 Document Docling configuration
+- [x] 9.2.4 Add migration guide for existing users
 
 ### 9.3 Create Migration Guide
-- [~] 9.3.1 Create MIGRATION.md
-- [~] 9.3.2 Explain breaking changes
-- [~] 9.3.3 Provide migration steps
-- [~] 9.3.4 Document data migration
-- [~] 9.3.5 Provide rollback instructions
+- [x] 9.3.1 Create MIGRATION.md
+- [x] 9.3.2 Explain breaking changes
+- [x] 9.3.3 Provide migration steps
+- [x] 9.3.4 Document data migration
+- [x] 9.3.5 Provide rollback instructions
 
 ### 9.4 Update Product Documentation
-- [~] 9.4.1 Rename product/Codebase-Memory-MCP-PRD.md to Knowledge-Base-MCP-PRD.md
-- [~] 9.4.2 Update content in PRD
-- [~] 9.4.3 Update steering files in .kiro/steering/
-- [~] 9.4.4 Update any other documentation files
+- [x] 9.4.1 Rename product/Codebase-Memory-MCP-PRD.md to Knowledge-Base-MCP-PRD.md
+- [x] 9.4.2 Update content in PRD
+- [x] 9.4.3 Update steering files in .kiro/steering/
+- [x] 9.4.4 Update any other documentation files
 
 ## Phase 10: Testing & Quality Assurance
 

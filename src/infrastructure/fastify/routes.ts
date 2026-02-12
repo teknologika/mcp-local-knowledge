@@ -4,7 +4,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.jsce.js';
+import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.js';
 import type { SearchService } from '../../domains/search/search.service.js';
 import AjvModule from 'ajv';
 import addFormatsModule from 'ajv-formats';

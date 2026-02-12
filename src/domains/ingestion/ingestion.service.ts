@@ -72,6 +72,133 @@ export class IngestionService {
   }
 
   /**
+   * Ingest individual files into an existing knowledge base
+   * 
+   * @param params - File ingestion parameters
+   * @returns Ingestion statistics
+   */
+  async ingestFiles(params: {
+    files: string[];
+    knowledgeBaseName: string;
+    config: Config;
+  }): Promise<{ filesProcessed: number; chunksCreated: number; errors: Array<{ filePath: string; error: string }> }> {
+    const { files, knowledgeBaseName } = params;
+    
+    this.logger.info('Starting file ingestion', {
+      knowledgeBaseName,
+      fileCount: files.length,
+    });
+
+    const allChunks: Chunk[] = [];
+    let processedFiles = 0;
+    const errors: Array<{ filePath: string; error: string }> = [];
+    const ingestionTimestamp = new Date().toISOString();
+
+    // Process each file
+    for (const filePath of files) {
+      try {
+        // Convert document to markdown
+        const conversionResult = await this.documentConverter.convertDocument(filePath);
+
+        // Chunk the document
+        let documentChunks;
+        if (conversionResult.doclingDocument) {
+          documentChunks = await this.documentChunker.chunkWithDocling(
+            conversionResult.doclingDocument,
+            {
+              maxTokens: this.config.document?.maxTokens || 512,
+              chunkSize: this.config.document?.chunkSize || 1000,
+              chunkOverlap: this.config.document?.chunkOverlap || 200,
+            }
+          );
+        } else {
+          documentChunks = await this.documentChunker.chunkDocument(
+            conversionResult.markdown,
+            {
+              maxTokens: this.config.document?.maxTokens || 512,
+              chunkSize: this.config.document?.chunkSize || 1000,
+              chunkOverlap: this.config.document?.chunkOverlap || 200,
+            }
+          );
+        }
+
+        // Determine document type from file extension
+        const ext = '.' + filePath.split('.').pop()?.toLowerCase();
+        const documentType = this.getDocumentType(ext);
+
+        // Transform to Chunk format
+        for (const docChunk of documentChunks) {
+          allChunks.push({
+            content: docChunk.content,
+            filePath: filePath.split('/').pop() || filePath, // Use filename only
+            startLine: 0,
+            endLine: 0,
+            chunkType: docChunk.metadata.chunkType,
+            isTestFile: false,
+            documentType,
+            tokenCount: docChunk.tokenCount,
+            headingPath: docChunk.metadata.headingPath,
+            pageNumber: docChunk.metadata.pageNumber,
+          });
+        }
+
+        processedFiles++;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          'Failed to process file',
+          error instanceof Error ? error : new Error(errorMessage),
+          { filePath }
+        );
+        errors.push({
+          filePath,
+          error: errorMessage,
+        });
+      }
+    }
+
+    this.logger.info('File processing completed', {
+      totalChunks: allChunks.length,
+      processedFiles,
+      errors: errors.length,
+    });
+
+    // Generate embeddings
+    const chunksWithEmbeddings = await this.generateEmbeddingsBatch(allChunks);
+
+    // Store chunks
+    if (chunksWithEmbeddings.length > 0) {
+      await this.storeChunks(
+        knowledgeBaseName,
+        '', // No base path for individual files
+        chunksWithEmbeddings,
+        ingestionTimestamp,
+        processedFiles
+      );
+    }
+
+    return {
+      filesProcessed: processedFiles,
+      chunksCreated: allChunks.length,
+      errors,
+    };
+  }
+
+  /**
+   * Get document type from file extension
+   */
+  private getDocumentType(ext: string): string {
+    if (ext === '.pdf') return 'pdf';
+    if (['.docx', '.doc'].includes(ext)) return 'docx';
+    if (['.pptx', '.ppt'].includes(ext)) return 'pptx';
+    if (['.xlsx', '.xls'].includes(ext)) return 'xlsx';
+    if (['.html', '.htm'].includes(ext)) return 'html';
+    if (['.md', '.markdown'].includes(ext)) return 'markdown';
+    if (['.mp3', '.wav', '.m4a', '.flac'].includes(ext)) return 'audio';
+    return 'text';
+  }
+
+  /**
    * Ingest a knowledge base
    * 
    * @param params - Ingestion parameters
