@@ -98,7 +98,7 @@ export class FastifyServer {
     // Register multipart support (for file uploads)
     this.fastify.register(fastifyMultipart, {
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB max file size
+        fileSize: this.config.ingestion.maxFileSize, // Use config value
         files: 1, // 1 file per request
       },
     });

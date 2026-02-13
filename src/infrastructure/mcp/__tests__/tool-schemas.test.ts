@@ -320,7 +320,7 @@ describe('MCP Tool Schemas', () => {
     it('should validate correct output', () => {
       const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.outputSchema);
       const output = {
-        url: 'http://localhost:8008',
+        url: 'http://localhost:8009',
         message: 'Knowledge Base Manager UI opened in default browser',
       };
       expect(validate(output)).toBe(true);
@@ -329,7 +329,7 @@ describe('MCP Tool Schemas', () => {
     it('should reject output with missing required fields', () => {
       const validate = ajv.compile(OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA.outputSchema);
       const output = {
-        url: 'http://localhost:8008',
+        url: 'http://localhost:8009',
         // Missing message
       };
       expect(validate(output)).toBe(false);

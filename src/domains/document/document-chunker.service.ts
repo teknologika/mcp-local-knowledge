@@ -30,7 +30,7 @@ export class DocumentChunkerService {
     const chunkSize = options.chunkSize || 1000;
     const chunkOverlap = options.chunkOverlap || 200;
 
-    logger.info({ maxTokens, contentLength: content.length }, 'Starting document chunking');
+    logger.info('Starting document chunking', { maxTokens, contentLength: content.length });
 
     try {
       // Try HybridChunker first
@@ -41,10 +41,10 @@ export class DocumentChunkerService {
       });
 
       const chunks = this.processHybridChunks(result.chunks || []);
-      logger.info({ chunkCount: chunks.length }, 'HybridChunker completed successfully');
+      logger.info('HybridChunker completed successfully', { chunkCount: chunks.length });
       return chunks;
     } catch (error) {
-      logger.warn({ error }, 'HybridChunker failed, falling back to simple chunking');
+      logger.warn('HybridChunker failed, falling back to simple chunking');
       return this.fallbackSimpleChunking(content, chunkSize, chunkOverlap);
     }
   }
@@ -58,7 +58,7 @@ export class DocumentChunkerService {
   ): Promise<DocumentChunk[]> {
     const maxTokens = options.maxTokens || 512;
 
-    logger.info({ maxTokens }, 'Chunking with Docling document object');
+    logger.info('Chunking with Docling document object', { maxTokens });
 
     try {
       // Use docling-sdk's chunking with the document object
@@ -69,10 +69,10 @@ export class DocumentChunkerService {
       });
 
       const chunks = this.processHybridChunks(result.chunks || []);
-      logger.info({ chunkCount: chunks.length }, 'Docling chunking completed successfully');
+      logger.info('Docling chunking completed successfully', { chunkCount: chunks.length });
       return chunks;
     } catch (error) {
-      logger.warn({ error }, 'Docling chunking failed, falling back to simple chunking');
+      logger.warn('Docling chunking failed, falling back to simple chunking');
       // Extract text from docling document for fallback
       const content = this.extractTextFromDocling(doclingDoc);
       return this.fallbackSimpleChunking(
@@ -222,7 +222,7 @@ export class DocumentChunkerService {
       }
     }
 
-    logger.info({ chunkCount: chunks.length }, 'Simple chunking completed');
+    logger.info('Simple chunking completed', { chunkCount: chunks.length });
     return chunks;
   }
 

@@ -1,4 +1,4 @@
-import type { ChunkType, DocumentType } from '../../shared/types/index.js';
+import type { ChunkType } from '../../shared/types/index.js';
 
 /**
  * Result of document conversion operation

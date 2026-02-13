@@ -175,7 +175,7 @@ Once configured, your AI assistant can use these tools:
 mcp-knowledge-manager
 ```
 
-Opens `http://localhost:8008` in your default browser with a visual interface for:
+Opens `http://localhost:8009` in your default browser with a visual interface for:
 - Searching documents with filters
 - Managing indexed knowledge bases
 - Viewing statistics and metadata
@@ -232,7 +232,7 @@ mcp-knowledge-ingest --path ~/Documents/work --name work-docs
 - ✅ Files in nested subdirectories (recursive scanning)
 - ✅ Semantic document chunks (paragraphs, sections, tables, headings)
 - ✅ Metadata tags (document type, page numbers, heading hierarchy)
-- ❌ Files larger than 10MB (configurable via `maxFileSize`)
+- ❌ Files larger than 50MB (configurable via `maxFileSize`)
 - ❌ Files in `.gitignore` (by default, use `--no-gitignore` to include)
 - ❌ Binary files and unsupported formats
 - ❌ Hidden directories (starting with `.`)
@@ -350,7 +350,7 @@ Opens the web-based Manager UI in the default browser. Automatically launches th
 ```json
 {
   "success": true,
-  "url": "http://localhost:8008",
+  "url": "http://localhost:8009",
   "serverStarted": true,
   "message": "Manager UI opened in browser. Server was started."
 }
@@ -369,8 +369,8 @@ mcp-knowledge-manager
 ```
 
 This will:
-1. Start a Fastify server on port 8008 (configurable)
-2. Automatically open `http://localhost:8008` in your default browser
+1. Start a Fastify server on port 8009 (configurable)
+2. Automatically open `http://localhost:8009` in your default browser
 3. Display all indexed knowledge bases with statistics
 
 #### Features
@@ -419,7 +419,7 @@ The system can be configured using a JSON configuration file. The default locati
     "cachePath": "~/.knowledge-base/models"
   },
   "server": {
-    "port": 8008,
+    "port": 8009,
     "host": "localhost",
     "sessionSecret": "change-me-in-production"
   },
@@ -428,7 +428,7 @@ The system can be configured using a JSON configuration file. The default locati
   },
   "ingestion": {
     "batchSize": 100,
-    "maxFileSize": 10485760
+    "maxFileSize": 52428800
   },
   "search": {
     "defaultMaxResults": 50,
@@ -466,7 +466,7 @@ The system can be configured using a JSON configuration file. The default locati
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `port` | Port for Manager UI server | `8008` |
+| `port` | Port for Manager UI server | `8009` |
 | `host` | Host for Manager UI server | `localhost` |
 | `sessionSecret` | Secret for session cookies | Auto-generated |
 
@@ -475,7 +475,7 @@ The system can be configured using a JSON configuration file. The default locati
 | Option | Description | Default |
 |--------|-------------|---------|
 | `batchSize` | Documents per batch during ingestion | `100` |
-| `maxFileSize` | Maximum file size in bytes | `10485760` (10MB) |
+| `maxFileSize` | Maximum file size in bytes | `52428800` (50MB) |
 
 #### Document Settings
 
@@ -782,12 +782,12 @@ mcp-knowledge-manager
 
 #### 5. "Manager UI won't open"
 
-**Problem:** Port 8008 is already in use.
+**Problem:** Port 8009 is already in use.
 
 **Solution:**
 ```bash
-# Check what's using port 8008
-lsof -i :8008
+# Check what's using port 8009
+lsof -i :8009
 
 # Kill the process or use a different port
 # Edit ~/.knowledge-base/config.json
@@ -1422,7 +1422,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Resource Limits
 
-- **Max file size**: 1MB default (configurable)
+- **Max file size**: 50MB default (configurable)
 - **Max results**: 200 maximum per search
 - **Batch size limits**: Prevents memory exhaustion
 

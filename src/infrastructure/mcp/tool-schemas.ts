@@ -299,7 +299,7 @@ export const OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA = {
     properties: {
       url: {
         type: 'string',
-        description: 'URL of the manager UI (e.g., "http://localhost:8008")',
+        description: 'URL of the manager UI (e.g., "http://localhost:8009")',
         format: 'uri',
       },
       message: {

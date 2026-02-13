@@ -7,7 +7,7 @@
     "cachePath": "~/.codebase-memory/models"
   },
   "server": {
-    "port": 8008,
+    "port": 8009,
     "host": "localhost"
   },
   "mcp": {
@@ -15,7 +15,7 @@
   },
   "ingestion": {
     "batchSize": 100,
-    "maxFileSize": 1048576
+    "maxFileSize": 52428800
   },
   "search": {
     "defaultMaxResults": 50,

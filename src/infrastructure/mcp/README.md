@@ -199,7 +199,7 @@ import { OPEN_CODEBASE_MANAGER_SCHEMA } from './tool-schemas.js';
 const input = {};
 
 const output = {
-  url: 'http://localhost:8008',
+  url: 'http://localhost:8009',
   message: 'Manager UI opened in default browser'
 };
 ```

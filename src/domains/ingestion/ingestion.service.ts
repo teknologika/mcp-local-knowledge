@@ -13,7 +13,7 @@
  * Requirements: 2.1, 2.3, 2.5, 2.6, 6.2, 6.3, 12.4, 14.1, 14.2, 14.3
  */
 
-import type { Config, IngestionParams, IngestionStats, Chunk } from '../../shared/types/index.js';
+import type { Config, IngestionParams, IngestionStats, Chunk, DocumentType } from '../../shared/types/index.js';
 import { FileScannerService, type ScannedFile } from './file-scanner.service.js';
 import type { EmbeddingService } from '../embedding/embedding.service.js';
 import { DocumentConverterService } from '../document/document-converter.service.js';
@@ -187,7 +187,7 @@ export class IngestionService {
   /**
    * Get document type from file extension
    */
-  private getDocumentType(ext: string): string {
+  private getDocumentType(ext: string): DocumentType {
     if (ext === '.pdf') return 'pdf';
     if (['.docx', '.doc'].includes(ext)) return 'docx';
     if (['.pptx', '.ppt'].includes(ext)) return 'pptx';

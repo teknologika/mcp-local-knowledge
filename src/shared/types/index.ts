@@ -76,6 +76,10 @@ export interface Chunk {
   chunkType: ChunkType;
   filePath: string;
   isTestFile?: boolean;
+  documentType?: DocumentType;
+  tokenCount?: number;
+  headingPath?: string[];
+  pageNumber?: number;
 }
 
 /**

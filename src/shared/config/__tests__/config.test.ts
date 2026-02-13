@@ -48,7 +48,7 @@ describe('Configuration Management', () => {
       const config = loadConfig();
       
       expect(config).toEqual(DEFAULT_CONFIG);
-      expect(config.server.port).toBe(8008);
+      expect(config.server.port).toBe(8009);
       expect(config.ingestion.batchSize).toBe(100);
       expect(config.search.defaultMaxResults).toBe(50);
       expect(config.document.conversionTimeout).toBe(30000);
@@ -339,7 +339,7 @@ describe('Configuration Management', () => {
 
   describe('DEFAULT_CONFIG', () => {
     it('should have correct default values', () => {
-      expect(DEFAULT_CONFIG.server.port).toBe(8008);
+      expect(DEFAULT_CONFIG.server.port).toBe(8009);
       expect(DEFAULT_CONFIG.server.host).toBe('localhost');
       expect(DEFAULT_CONFIG.ingestion.batchSize).toBe(100);
       expect(DEFAULT_CONFIG.ingestion.maxFileSize).toBe(1048576);

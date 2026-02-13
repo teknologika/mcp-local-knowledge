@@ -87,14 +87,14 @@ export async function registerRoutes(
   searchService: SearchService
 ): Promise<void> {
   /**
-   * GET /api/codebases
+   * GET /api/knowledgebases
    * List all knowledge bases with metadata
    */
-  fastify.get('/api/codebases', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/api/knowledgebases', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      logger.info('GET /api/codebases');
-      const codebases = await codebaseService.listKnowledgeBases();
-      return { codebases };
+      logger.info('GET /api/knowledgebases');
+      const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
+      return { knowledgeBases };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to list knowledge bases', error instanceof Error ? error : new Error(errorMessage));

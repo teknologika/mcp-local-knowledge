@@ -31,7 +31,7 @@ export const DEFAULT_CONFIG: Config = {
     cachePath: join(homedir(), '.knowledge-base', 'models'),
   },
   server: {
-    port: 8008,
+    port: 8009,
     host: 'localhost',
   },
   mcp: {
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: Config = {
   },
   ingestion: {
     batchSize: 100,
-    maxFileSize: 1048576, // 1MB
+    maxFileSize: 52428800, // 50MB
   },
   search: {
     defaultMaxResults: 50,

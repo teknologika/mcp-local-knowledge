@@ -4,7 +4,6 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { MultipartFile } from '@fastify/multipart';
 import type { KnowledgeBaseService } from '../../domains/knowledgebase/knowledgebase.service.js';
 import type { SearchService } from '../../domains/search/search.service.js';
 import type { IngestionService } from '../../domains/ingestion/ingestion.service.js';
@@ -452,7 +451,10 @@ export async function registerManagerRoutes(
       }
       
       // Get knowledge base name from fields
-      const knowledgeBaseName = data.fields.knowledgeBaseName?.value as string;
+      const knowledgeBaseNameField = data.fields.knowledgeBaseName;
+      const knowledgeBaseName = typeof knowledgeBaseNameField === 'object' && 'value' in knowledgeBaseNameField 
+        ? String(knowledgeBaseNameField.value)
+        : String(knowledgeBaseNameField);
       
       if (!knowledgeBaseName) {
         return reply.status(400).send({
@@ -475,18 +477,19 @@ export async function registerManagerRoutes(
         });
       }
       
-      // Validate file size (10MB max)
+      // Validate file size (use config maxFileSize)
       const buffer = await data.toBuffer();
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = config.ingestion.maxFileSize;
       
       if (buffer.length > maxSize) {
         return reply.status(400).send({
-          error: `File size exceeds 10MB limit (${Math.round(buffer.length / 1024 / 1024)}MB)`
+          error: `File size exceeds ${Math.round(maxSize / 1024 / 1024)}MB limit (${Math.round(buffer.length / 1024 / 1024)}MB)`
         });
       }
       
       // Verify knowledge base exists
-      const kb = await codebaseService.getKnowledgeBase(knowledgeBaseName);
+      const kbs = await codebaseService.listKnowledgeBases();
+      const kb = kbs.find(k => k.name === knowledgeBaseName);
       if (!kb) {
         return reply.status(404).send({
           error: `Knowledge base not found: ${knowledgeBaseName}`
@@ -514,8 +517,8 @@ export async function registerManagerRoutes(
         logger.info('File processed successfully', { filename, knowledgeBaseName });
         
         // Clean up temp file
-        await unlink(tempFilePath).catch(err => {
-          logger.warn('Failed to delete temp file', err instanceof Error ? err : new Error(String(err)), { tempFilePath });
+        await unlink(tempFilePath).catch(() => {
+          logger.warn('Failed to delete temp file', { tempFilePath });
         });
         
         return reply.send({
@@ -526,8 +529,8 @@ export async function registerManagerRoutes(
         
       } catch (error) {
         // Clean up temp file on error
-        await unlink(tempFilePath).catch(err => {
-          logger.warn('Failed to delete temp file after error', err instanceof Error ? err : new Error(String(err)), { tempFilePath });
+        await unlink(tempFilePath).catch(() => {
+          logger.warn('Failed to delete temp file after error', { tempFilePath });
         });
         
         throw error;
