@@ -273,7 +273,12 @@ describe('DocumentConverterService - PDF Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'document.pdf',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Test Document');
@@ -601,7 +606,12 @@ describe('DocumentConverterService - PDF Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'document (final) [v2].pdf',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.metadata.title).toBe('document (final) [v2].pdf');
     });
@@ -807,7 +817,12 @@ describe('DocumentConverterService - DOCX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'report.docx',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Annual Report 2024');
@@ -842,7 +857,12 @@ describe('DocumentConverterService - DOCX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'legacy.doc',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.format).toBe('docx'); // .doc maps to docx type
@@ -1099,7 +1119,12 @@ describe('DocumentConverterService - DOCX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'report (final) [v2].docx',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.metadata.title).toBe('report (final) [v2].docx');
     });
@@ -1422,7 +1447,12 @@ describe('DocumentConverterService - DOCX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'file.docx',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
     });
   });
@@ -1479,7 +1509,12 @@ describe('DocumentConverterService - PPTX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'presentation.pptx',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Q4 Presentation');
@@ -1635,7 +1670,12 @@ describe('DocumentConverterService - XLSX Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'data.xlsx',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Employee Data');
@@ -1786,7 +1826,12 @@ describe('DocumentConverterService - HTML Conversion', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'page.html',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Company Website');
@@ -2193,7 +2238,12 @@ describe('DocumentConverterService - Audio Transcription', () => {
       expect(mockDocling.convert).toHaveBeenCalledWith(
         filePath,
         'recording.mp3',
-        { to_formats: ['md', 'json'] }
+        { 
+          toFormats: ['md', 'json'],
+          ocr: true,
+          forceOcr: false,
+          imageExportMode: 'placeholder'
+        }
       );
       expect(result.markdown).toBe(mockResult.markdown);
       expect(result.metadata.title).toBe('Audio Recording');

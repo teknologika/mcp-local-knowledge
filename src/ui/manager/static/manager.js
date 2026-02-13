@@ -1024,3 +1024,201 @@ function getFileIconClass(ext) {
     if (['.mp3', '.wav', '.m4a', '.flac'].includes(ext)) return 'audio';
     return 'default';
 }
+
+
+// ===== Document Management Functionality =====
+
+/**
+ * Toggle documents list for a knowledge base (inline expansion)
+ */
+async function toggleDocuments(event, knowledgeBaseName) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Use data attribute for more reliable selection
+    const kbRow = document.querySelector(`tr.kb-row[data-kb-name="${knowledgeBaseName}"]`);
+    if (!kbRow) {
+        console.error('Knowledge base row not found:', knowledgeBaseName);
+        return;
+    }
+    
+    // Get the next sibling row (documents row)
+    const documentsRow = kbRow.nextElementSibling;
+    if (!documentsRow || !documentsRow.classList.contains('documents-row')) {
+        console.error('Documents row not found for:', knowledgeBaseName);
+        return;
+    }
+    
+    const documentsList = documentsRow.querySelector('.documents-list');
+    const documentsLoading = documentsRow.querySelector('.documents-loading');
+    const expandIcon = kbRow.querySelector('.expand-icon');
+    
+    if (!documentsList || !documentsLoading || !expandIcon) {
+        console.error('Documents elements not found');
+        return;
+    }
+    
+    // Toggle visibility
+    const isExpanded = documentsRow.style.display === 'table-row';
+    
+    if (isExpanded) {
+        // Collapse
+        documentsRow.style.display = 'none';
+        expandIcon.style.transform = 'rotate(0deg)';
+    } else {
+        // Expand
+        documentsRow.style.display = 'table-row';
+        expandIcon.style.transform = 'rotate(90deg)';
+        
+        // Load documents if not already loaded
+        if (documentsList.innerHTML.trim() === '' || documentsList.innerHTML.includes('<!-- Documents will be loaded here -->')) {
+            documentsLoading.style.display = 'block';
+            documentsList.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/knowledgebases/${encodeURIComponent(knowledgeBaseName)}/documents`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load documents');
+                }
+                
+                const data = await response.json();
+                
+                documentsLoading.style.display = 'none';
+                
+                if (data.documents.length === 0) {
+                    documentsList.innerHTML = '<div class="empty-state" style="padding: 2rem; text-align: center;"><p style="color: var(--text-secondary);">No documents found</p></div>';
+                    return;
+                }
+                
+                // Build documents list
+                documentsList.innerHTML = data.documents.map(doc => {
+                    const ext = '.' + doc.filePath.split('.').pop().toLowerCase();
+                    const iconClass = getFileIconClass(ext);
+                    const sizeStr = formatFileSize(doc.sizeBytes);
+                    const date = new Date(doc.lastIngestion);
+                    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    
+                    return `
+                        <div class="document-item">
+                            <div class="document-item-info">
+                                <div class="file-item-icon ${iconClass}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                    </svg>
+                                </div>
+                                <div class="document-item-details">
+                                    <div class="document-item-name" title="${doc.filePath}">${doc.filePath}</div>
+                                    <div class="document-item-meta">
+                                        <span class="badge badge-blue">${doc.chunkCount} chunks</span>
+                                        <span class="badge badge-green">${doc.documentType}</span>
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary);">${sizeStr}</span>
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary);">${dateStr}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="document-item-actions">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="confirmDeleteDocument('${knowledgeBaseName}', '${doc.filePath.replace(/'/g, "\\'")}', this)" title="Delete document">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                documentsLoading.style.display = 'none';
+                documentsList.innerHTML = '<div class="empty-state" style="padding: 2rem; text-align: center;"><p style="color: var(--danger);">Error loading documents</p></div>';
+            }
+        }
+    }
+}
+
+/**
+ * Confirm and delete document
+ */
+async function confirmDeleteDocument(knowledgeBaseName, filePath, buttonElement) {
+    if (!confirm(`Delete "${filePath}"?\n\nThis will remove all chunks from the knowledge base. This cannot be undone.`)) {
+        return;
+    }
+    
+    // Get the document item element
+    const documentItem = buttonElement.closest('.document-item');
+    
+    // Disable button
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10"/></svg>';
+    
+    try {
+        const response = await fetch(`/api/knowledgebases/${encodeURIComponent(knowledgeBaseName)}/documents`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ filePath })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete document');
+        }
+        
+        const result = await response.json();
+        
+        // Remove the document item from the DOM with animation
+        if (documentItem) {
+            documentItem.style.opacity = '0';
+            documentItem.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => {
+                documentItem.remove();
+                
+                // Check if there are any documents left
+                const kbRow = document.querySelector(`tr.kb-row[data-kb-name="${knowledgeBaseName}"]`);
+                if (kbRow) {
+                    const documentsRow = kbRow.nextElementSibling;
+                    if (documentsRow) {
+                        const documentsList = documentsRow.querySelector('.documents-list');
+                        if (documentsList && documentsList.children.length === 0) {
+                            documentsList.innerHTML = '<div class="empty-state" style="padding: 2rem; text-align: center;"><p style="color: var(--text-secondary);">No documents found</p></div>';
+                        }
+                    }
+                }
+            }, 300);
+        }
+        
+        // Show success message briefly
+        const tempMessage = document.createElement('div');
+        tempMessage.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(34, 197, 94, 0.9); color: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; animation: slideIn 0.3s ease;';
+        tempMessage.textContent = `Deleted "${filePath}" (${result.deletedChunks} chunks removed)`;
+        document.body.appendChild(tempMessage);
+        
+        setTimeout(() => {
+            tempMessage.style.opacity = '0';
+            tempMessage.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => tempMessage.remove(), 300);
+        }, 3000);
+        
+        // Reload page after delay to update stats in the table
+        setTimeout(() => {
+            window.location.href = '/?tab=manage';
+        }, 3500);
+        
+    } catch (error) {
+        console.error('Failed to delete document:', error);
+        alert(`Failed to delete document: ${error.message}`);
+        
+        // Re-enable button
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+        `;
+    }
+}

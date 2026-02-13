@@ -212,6 +212,26 @@ async function main() {
       config
     );
 
+    // Ensure default knowledge base exists
+    try {
+      mainLogger.debug('Checking for default knowledge base');
+      const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
+      const hasDefault = knowledgeBases.some(kb => kb.name === 'default');
+      
+      if (!hasDefault) {
+        mainLogger.info('Creating default knowledge base');
+        await knowledgeBaseService.createKnowledgeBase('default');
+        mainLogger.info('Default knowledge base created successfully');
+      } else {
+        mainLogger.debug('Default knowledge base already exists');
+      }
+    } catch (error) {
+      mainLogger.warn('Failed to create default knowledge base', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Don't fail startup if default KB creation fails
+    }
+
     // Create Fastify server
     const fastifyServer = new FastifyServer(
       knowledgeBaseService,

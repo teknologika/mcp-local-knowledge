@@ -13,7 +13,7 @@
 
 import { Command } from 'commander';
 import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { loadConfig } from '../shared/config/config.js';
 import { createLogger } from '../shared/logging/logger.js';
 import { IngestionService } from '../domains/ingestion/ingestion.service.js';
@@ -56,7 +56,7 @@ async function main() {
     .name('mcp-knowledge-ingest')
     .description('Ingest documents into a knowledge base for semantic search')
     .version('0.1.0')
-    .requiredOption('-p, --path <directory>', 'Path to document directory')
+    .requiredOption('-p, --path <path>', 'Path to document directory or file')
     .requiredOption('-n, --name <name>', 'Unique name for the knowledge base')
     .option('-c, --config <file>', 'Path to configuration file')
     .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
@@ -79,7 +79,17 @@ async function main() {
     // Resolve and validate path
     const knowledgeBasePath = resolve(options.path);
     if (!existsSync(knowledgeBasePath)) {
-      console.error(`Error: Directory not found: ${knowledgeBasePath}`);
+      console.error(`Error: Path not found: ${knowledgeBasePath}`);
+      process.exit(1);
+    }
+
+    // Check if path is a file or directory
+    const pathStats = statSync(knowledgeBasePath);
+    const isFile = pathStats.isFile();
+    const isDirectory = pathStats.isDirectory();
+
+    if (!isFile && !isDirectory) {
+      console.error(`Error: Path must be a file or directory: ${knowledgeBasePath}`);
       process.exit(1);
     }
 
@@ -89,6 +99,7 @@ async function main() {
 
     console.log(`\nIngesting knowledge base: ${options.name}`);
     console.log(`Path: ${knowledgeBasePath}`);
+    console.log(`Type: ${isFile ? 'Single file' : 'Directory'}`);
     console.log(`Supported formats: PDF, DOCX, PPTX, XLSX, HTML, Markdown, Text, Audio`);
     console.log('');
 
@@ -132,16 +143,56 @@ async function main() {
       }
     };
 
-    // Run ingestion
-    const stats = await ingestionService.ingestCodebase(
-      {
-        path: knowledgeBasePath,
-        name: options.name,
+    // Run ingestion based on path type
+    const startTime = Date.now();
+    let stats;
+
+    if (isFile) {
+      // Single file ingestion
+      console.log('Processing file...');
+      const result = await ingestionService.ingestFiles({
+        files: [knowledgeBasePath],
+        knowledgeBaseName: options.name,
         config,
-        respectGitignore: options.gitignore !== false, // Commander sets to false if --no-gitignore is used
-      },
-      progressCallback
-    );
+      });
+
+      const endTime = Date.now();
+      
+      // Format stats to match directory ingestion format
+      stats = {
+        totalFiles: 1,
+        supportedFiles: result.filesProcessed,
+        unsupportedFiles: new Map<string, number>(),
+        chunksCreated: result.chunksCreated,
+        durationMs: endTime - startTime,
+      };
+
+      // Add unsupported file info if there were errors
+      if (result.errors.length > 0) {
+        const ext = knowledgeBasePath.split('.').pop()?.toLowerCase() || 'unknown';
+        stats.unsupportedFiles.set(`.${ext}`, result.errors.length);
+      }
+
+      // Log any errors
+      if (result.errors.length > 0) {
+        console.log('');
+        console.log('Errors encountered:');
+        for (const error of result.errors) {
+          console.log(`  ${error.filePath}: ${error.error}`);
+        }
+      }
+    } else {
+      // Directory ingestion
+      stats = await ingestionService.ingestCodebase(
+        {
+          path: knowledgeBasePath,
+          name: options.name,
+          config,
+          respectGitignore: options.gitignore !== false, // Commander sets to false if --no-gitignore is used
+        },
+        progressCallback
+      );
+    }
 
     // Print statistics
     console.log('');
@@ -172,9 +223,8 @@ async function main() {
       ...stats,
     });
 
-    // Give LanceDB time to cleanup before exit
-    await new Promise(resolve => setTimeout(resolve, 100));
-    process.exit(0);
+    // Let Node.js exit naturally instead of forcing exit
+    // This allows LanceDB to cleanup properly
   } catch (error) {
     console.error('');
     console.error('✗ Ingestion failed');
@@ -197,12 +247,12 @@ async function main() {
     console.error('Tip: Set DEBUG=1 for detailed error information');
     console.error('');
     
-    process.exit(1);
+    // Let Node.js exit naturally to allow proper cleanup
   }
 }
 
 // Run the CLI
 main().catch((error) => {
   console.error('Unexpected error:', error);
-  process.exit(1);
+  // Let Node.js exit naturally
 });

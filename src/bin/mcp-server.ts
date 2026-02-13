@@ -79,6 +79,19 @@ async function main() {
       config
     );
 
+    // Ensure default knowledge base exists
+    try {
+      const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
+      const hasDefault = knowledgeBases.some(kb => kb.name === 'default');
+      
+      if (!hasDefault) {
+        await knowledgeBaseService.createKnowledgeBase('default');
+      }
+    } catch (error) {
+      // Don't fail startup if default KB creation fails
+      // It will be created on first use if needed
+    }
+
     // Create and start MCP server
     const mcpServer = new MCPServer(knowledgeBaseService, searchService, config);
 

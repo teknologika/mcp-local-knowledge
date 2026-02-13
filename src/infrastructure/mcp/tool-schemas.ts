@@ -313,16 +313,6 @@ export const OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA = {
 } as const;
 
 /**
- * All tool schemas exported as an array for easy registration
- */
-export const ALL_TOOL_SCHEMAS = [
-  LIST_KNOWLEDGEBASES_SCHEMA,
-  SEARCH_KNOWLEDGEBASES_SCHEMA,
-  GET_KNOWLEDGEBASE_STATS_SCHEMA,
-  OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA,
-] as const;
-
-/**
  * Type definitions for tool inputs and outputs
  */
 
@@ -392,3 +382,103 @@ export interface OpenKnowledgebaseManagerOutput {
   url: string;
   message: string;
 }
+
+/**
+ * Schema for list_documents tool
+ * 
+ * Lists all documents in a specific knowledge base.
+ */
+export const LIST_DOCUMENTS_SCHEMA = {
+  name: 'list_documents',
+  description: 'List all documents in a knowledge base with their metadata including file path, document type, chunk count, last ingestion timestamp, and size.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      knowledgebaseName: {
+        type: 'string',
+        description: 'Name of the knowledge base to list documents from',
+        minLength: 1,
+      },
+    },
+    required: ['knowledgebaseName'],
+    additionalProperties: false,
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      documents: {
+        type: 'array',
+        description: 'Array of all documents in the knowledge base',
+        items: {
+          type: 'object',
+          properties: {
+            filePath: {
+              type: 'string',
+              description: 'Relative path to the document file',
+            },
+            documentType: {
+              type: 'string',
+              description: 'Type of the document',
+              enum: ['pdf', 'docx', 'pptx', 'xlsx', 'html', 'markdown', 'text', 'audio'],
+            },
+            chunkCount: {
+              type: 'number',
+              description: 'Number of chunks for this document',
+              minimum: 0,
+            },
+            lastIngestion: {
+              type: 'string',
+              description: 'ISO 8601 timestamp of when this document was last ingested',
+              format: 'date-time',
+            },
+            sizeBytes: {
+              type: 'number',
+              description: 'Total size of all chunks in bytes',
+              minimum: 0,
+            },
+          },
+          required: ['filePath', 'documentType', 'chunkCount', 'lastIngestion', 'sizeBytes'],
+          additionalProperties: false,
+        },
+      },
+      knowledgebaseName: {
+        type: 'string',
+        description: 'Name of the knowledge base',
+      },
+      totalDocuments: {
+        type: 'number',
+        description: 'Total number of documents',
+        minimum: 0,
+      },
+    },
+    required: ['documents', 'knowledgebaseName', 'totalDocuments'],
+    additionalProperties: false,
+  },
+} as const;
+
+export interface ListDocumentsInput {
+  knowledgebaseName: string;
+}
+
+export interface ListDocumentsOutput {
+  documents: Array<{
+    filePath: string;
+    documentType: string;
+    chunkCount: number;
+    lastIngestion: string;
+    sizeBytes: number;
+  }>;
+  knowledgebaseName: string;
+  totalDocuments: number;
+}
+
+/**
+ * All tool schemas exported as an array for easy registration
+ */
+export const ALL_TOOL_SCHEMAS = [
+  LIST_KNOWLEDGEBASES_SCHEMA,
+  SEARCH_KNOWLEDGEBASES_SCHEMA,
+  GET_KNOWLEDGEBASE_STATS_SCHEMA,
+  OPEN_KNOWLEDGEBASE_MANAGER_SCHEMA,
+  LIST_DOCUMENTS_SCHEMA,
+] as const;

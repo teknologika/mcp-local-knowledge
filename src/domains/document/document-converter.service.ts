@@ -1,6 +1,6 @@
-import { Docling } from 'docling-sdk';
-import { readFile } from 'node:fs/promises';
-import { basename, extname } from 'node:path';
+import { readFile, mkdir } from 'node:fs/promises';
+import { basename, extname, join } from 'node:path';
+import { spawn } from 'node:child_process';
 import type { DocumentConversionResult, DocumentMetadata } from './document.types.js';
 import type { DocumentType } from '../../shared/types/index.js';
 import { createLogger } from '../../shared/logging/index.js';
@@ -9,18 +9,14 @@ const rootLogger = createLogger('info');
 const logger = rootLogger.child('DocumentConverterService');
 
 /**
- * Service for converting various document formats to markdown using docling-sdk
+ * Service for converting various document formats to markdown using docling CLI
  */
 export class DocumentConverterService {
-  private docling: Docling;
   private conversionTimeout: number;
+  private outputDir: string;
 
   constructor(options: { outputDir?: string; conversionTimeout?: number } = {}) {
-    this.docling = new Docling({
-      cli: {
-        outputDir: options.outputDir || './temp',
-      },
-    });
+    this.outputDir = options.outputDir || './temp';
     this.conversionTimeout = options.conversionTimeout || 30000; // 30 seconds default
   }
 
@@ -65,33 +61,61 @@ export class DocumentConverterService {
       }
     }
 
-    // For binary formats (PDF, Office docs, audio), use Docling
+    // For binary formats (PDF, Office docs, audio), use Docling CLI directly
     try {
-      // Create timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Document conversion timed out after ${this.conversionTimeout}ms`));
-        }, this.conversionTimeout);
-      });
-
-      // Convert document with timeout
-      const conversionPromise = this.docling.convert(filePath, fileName, {
-        to_formats: ['md', 'json'],
-      });
-
-      const result = await Promise.race([conversionPromise, timeoutPromise]);
-
-      // Extract markdown content
-      const markdown = result.markdown || '';
+      // Ensure output directory exists
+      await mkdir(this.outputDir, { recursive: true });
       
-      // Extract metadata from docling result
+      // Build docling CLI command
+      const baseNameWithoutExt = basename(fileName, extname(fileName));
+      const args = [
+        '--ocr',  // Enable OCR for scanned PDFs
+        '--image-export-mode', 'placeholder',  // Use placeholders instead of base64 images
+        filePath,
+        '--to', 'md',  // Output markdown format
+        '--to', 'json',  // Output JSON format
+        '--output', this.outputDir,
+      ];
+      
+      logger.info('Executing docling CLI', { args, outputDir: this.outputDir });
+      
+      // Execute docling CLI with timeout
+      const { stderr, exitCode } = await this.executeDoclingCLI(args);
+      
+      if (exitCode !== 0) {
+        throw new Error(`Docling CLI failed with exit code ${exitCode}: ${stderr}`);
+      }
+      
+      // Read the generated markdown and JSON files
+      const mdPath = join(this.outputDir, `${baseNameWithoutExt}.md`);
+      const jsonPath = join(this.outputDir, `${baseNameWithoutExt}.json`);
+      
+      let markdown = '';
+      let jsonContent: any = null;
+      
+      try {
+        markdown = await readFile(mdPath, 'utf-8');
+        logger.info('Successfully read markdown from disk', { mdPath, length: markdown.length });
+      } catch (error) {
+        logger.warn('Failed to read markdown file', { mdPath, error: error instanceof Error ? error.message : 'Unknown error' });
+      }
+      
+      try {
+        const jsonText = await readFile(jsonPath, 'utf-8');
+        jsonContent = JSON.parse(jsonText);
+        logger.info('Successfully read JSON from disk', { jsonPath });
+      } catch (error) {
+        logger.warn('Failed to read JSON file', { jsonPath, error: error instanceof Error ? error.message : 'Unknown error' });
+      }
+      
+      // Extract metadata from JSON content
       const metadata: DocumentMetadata = {
-        title: result.metadata?.title || fileName,
+        title: jsonContent?.name || fileName,
         format: documentType,
-        pageCount: result.metadata?.page_count,
+        pageCount: jsonContent?.page_count,
         wordCount: this.countWords(markdown),
-        hasImages: result.metadata?.has_images || false,
-        hasTables: result.metadata?.has_tables || false,
+        hasImages: jsonContent?.has_images || false,
+        hasTables: jsonContent?.has_tables || false,
         conversionDuration: Date.now() - startTime,
       };
 
@@ -100,7 +124,7 @@ export class DocumentConverterService {
       return {
         markdown,
         metadata,
-        doclingDocument: result.document, // For HybridChunker
+        doclingDocument: jsonContent, // For HybridChunker
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -113,6 +137,58 @@ export class DocumentConverterService {
       logger.error('Document conversion failed, attempting fallback', error instanceof Error ? error : undefined, { filePath, duration });
       return this.fallbackTextExtraction(filePath, documentType, duration);
     }
+  }
+
+  /**
+   * Execute docling CLI command with timeout
+   */
+  private async executeDoclingCLI(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('docling', args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          if (!child.killed) {
+            child.kill('SIGKILL');
+          }
+        }, 1000);
+        reject(new Error(`Docling CLI timed out after ${this.conversionTimeout}ms`));
+      }, this.conversionTimeout);
+
+      child.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr?.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('error', (error) => {
+        clearTimeout(timeout);
+        if (!timedOut) {
+          reject(new Error(`Failed to spawn docling CLI: ${error.message}`));
+        }
+      });
+
+      child.on('close', (code) => {
+        clearTimeout(timeout);
+        if (!timedOut) {
+          resolve({
+            stdout,
+            stderr,
+            exitCode: code || 0,
+          });
+        }
+      });
+    });
   }
 
   /**

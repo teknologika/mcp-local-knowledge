@@ -126,6 +126,8 @@ export class MCPServer {
             return await this.handleGetKnowledgebaseStats(args);
           case 'open_knowledgebase_manager':
             return await this.handleOpenKnowledgebaseManager(args);
+          case 'list_documents':
+            return await this.handleListDocuments(args);
           default:
             throw this.createError(
               MCPErrorCode.TOOL_NOT_FOUND,
@@ -348,6 +350,47 @@ export class MCPServer {
         `Failed to open browser: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * Handle list_documents tool call
+   */
+  private async handleListDocuments(args: unknown) {
+    // Validate input
+    this.validateInput(
+      {
+        type: 'object',
+        properties: {
+          knowledgebaseName: { type: 'string', minLength: 1 },
+        },
+        required: ['knowledgebaseName'],
+        additionalProperties: false,
+      },
+      args
+    );
+
+    const { knowledgebaseName } = args as { knowledgebaseName: string };
+
+    // List documents
+    const documents = await this.knowledgeBaseService.listDocuments(knowledgebaseName);
+
+    // Format response
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              documents,
+              knowledgebaseName,
+              totalDocuments: documents.length,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
   }
 
   /**

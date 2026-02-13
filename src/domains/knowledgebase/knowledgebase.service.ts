@@ -131,9 +131,13 @@ export class KnowledgeBaseService {
             });
             
             for (const row of allRows) {
-              // Count all chunks (including placeholder - it's just 1 record)
+              // Skip placeholder chunks when counting
+              if (row.filePath === '__PLACEHOLDER__' || row.content === '__PLACEHOLDER__') {
+                continue;
+              }
+              
               chunkCount++;
-              if (row.filePath && row.filePath !== '__PLACEHOLDER__') {
+              if (row.filePath) {
                 uniqueFiles.add(row.filePath);
               }
             }
@@ -193,17 +197,23 @@ export class KnowledgeBaseService {
       
       // Get all rows to calculate statistics
       const rows = await table.query().toArray();
-      
-      const chunkCount = rows.length;
 
-      // Calculate statistics
+      // Calculate statistics (excluding placeholder chunks)
       const chunkTypeMap = new Map<string, number>();
       const fileSet = new Set<string>();
       let totalSize = 0;
       let path = '';
       let lastIngestion = '';
+      let actualChunkCount = 0;
 
       for (const row of rows) {
+        // Skip placeholder chunks
+        if (row.filePath === '__PLACEHOLDER__' || row.content === '__PLACEHOLDER__') {
+          continue;
+        }
+
+        actualChunkCount++;
+        
         const filePath = row.filePath || '';
         const chunkType = row.chunkType || 'unknown';
         const content = row.content || '';
@@ -232,7 +242,7 @@ export class KnowledgeBaseService {
       const stats: KnowledgeBaseStats = {
         name,
         path,
-        chunkCount,
+        chunkCount: actualChunkCount,
         fileCount: fileSet.size,
         lastIngestion,
         chunkTypes,
@@ -241,7 +251,7 @@ export class KnowledgeBaseService {
 
       logger.debug('Knowledge base statistics retrieved successfully', {
         knowledgeBaseName: name,
-        chunkCount,
+        chunkCount: actualChunkCount,
         fileCount: fileSet.size,
       });
 
@@ -385,6 +395,150 @@ export class KnowledgeBaseService {
       );
       throw new KnowledgeBaseError(
         `Failed to delete chunk set for knowledge base '${knowledgeBaseName}' at timestamp '${timestamp}': ${errorMessage}`,
+        error
+      );
+    }
+  }
+
+  /**
+   * Delete all chunks for a specific document from a knowledge base
+   * @param knowledgeBaseName - Name of the knowledge base
+   * @param filePath - Relative path to the document to remove
+   * @returns Number of chunks deleted
+   */
+  async deleteDocument(knowledgeBaseName: string, filePath: string): Promise<number> {
+    try {
+      logger.debug('Deleting document', { knowledgeBaseName, filePath });
+
+      // Validate inputs
+      if (!filePath || filePath.trim() === '') {
+        throw new KnowledgeBaseError('File path cannot be empty');
+      }
+
+      // Security: Prevent path traversal
+      if (filePath.includes('..') || filePath.startsWith('/')) {
+        throw new KnowledgeBaseError('Invalid file path: path traversal not allowed');
+      }
+
+      const table = await this.lanceClient.getOrCreateTable(knowledgeBaseName);
+      if (!table) {
+        throw new KnowledgeBaseError(`Knowledge base '${knowledgeBaseName}' not found`);
+      }
+
+      // Debug: Log a sample row to see the actual field structure
+      try {
+        const sampleRows = await table.query().limit(1).toArray();
+        if (sampleRows.length > 0) {
+          logger.debug('Sample row fields', {
+            knowledgeBaseName,
+            fields: Object.keys(sampleRows[0]),
+            sampleFilePath: sampleRows[0].filePath,
+          });
+        }
+      } catch (debugError) {
+        logger.warn('Could not fetch sample row for debugging', { error: debugError });
+      }
+
+      // Count chunks before deletion
+      const beforeCount = await table.countRows();
+
+      // Escape single quotes in filePath for SQL filter
+      const escapedFilePath = filePath.replace(/'/g, "''");
+
+      // Delete chunks matching filePath
+      // Note: LanceDB requires backticks for field names with mixed case
+      await table.delete(`\`filePath\` = '${escapedFilePath}'`);
+
+      // Count chunks after deletion
+      const afterCount = await table.countRows();
+      const deletedCount = beforeCount - afterCount;
+
+      logger.info('Document deleted', {
+        knowledgeBaseName,
+        filePath,
+        chunksDeleted: deletedCount,
+      });
+
+      return deletedCount;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(
+        'Failed to delete document',
+        error instanceof Error ? error : new Error(errorMessage),
+        { knowledgeBaseName, filePath }
+      );
+      throw new KnowledgeBaseError(
+        `Failed to delete document '${filePath}' from knowledge base '${knowledgeBaseName}': ${errorMessage}`,
+        error
+      );
+    }
+  }
+
+  /**
+   * List all unique documents in a knowledge base
+   * @param knowledgeBaseName - Name of the knowledge base
+   * @returns Array of document metadata
+   */
+  async listDocuments(knowledgeBaseName: string): Promise<import('../../shared/types/index.js').DocumentInfo[]> {
+    try {
+      logger.debug('Listing documents', { knowledgeBaseName });
+
+      const table = await this.lanceClient.getOrCreateTable(knowledgeBaseName);
+      if (!table) {
+        throw new KnowledgeBaseError(`Knowledge base '${knowledgeBaseName}' not found`);
+      }
+
+      // Query all rows and aggregate by filePath
+      const rows = await table.query().toArray();
+
+      const documentsMap = new Map<string, import('../../shared/types/index.js').DocumentInfo>();
+
+      for (const row of rows) {
+        // Skip placeholder chunks
+        if (row.filePath === '__PLACEHOLDER__' || row.content === '__PLACEHOLDER__') {
+          continue;
+        }
+
+        const filePath = row.filePath || '';
+        if (!filePath) continue;
+
+        if (!documentsMap.has(filePath)) {
+          documentsMap.set(filePath, {
+            filePath,
+            documentType: row.documentType || 'text',
+            chunkCount: 0,
+            lastIngestion: row.ingestionTimestamp || '',
+            sizeBytes: 0,
+          });
+        }
+
+        const doc = documentsMap.get(filePath)!;
+        doc.chunkCount++;
+        doc.sizeBytes += (row.content || '').length;
+
+        // Update to latest ingestion timestamp
+        if (row.ingestionTimestamp && row.ingestionTimestamp > doc.lastIngestion) {
+          doc.lastIngestion = row.ingestionTimestamp;
+        }
+      }
+
+      const documents = Array.from(documentsMap.values());
+
+      logger.debug('Documents listed successfully', {
+        knowledgeBaseName,
+        documentCount: documents.length,
+      });
+
+      return documents;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(
+        'Failed to list documents',
+        error instanceof Error ? error : new Error(errorMessage),
+        { knowledgeBaseName }
+      );
+      throw new KnowledgeBaseError(
+        `Failed to list documents in knowledge base '${knowledgeBaseName}': ${errorMessage}`,
         error
       );
     }

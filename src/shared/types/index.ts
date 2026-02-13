@@ -175,3 +175,14 @@ export interface IngestionStats {
   chunksCreated: number;
   durationMs: number;
 }
+
+/**
+ * Document information in a knowledge base
+ */
+export interface DocumentInfo {
+  filePath: string;
+  documentType: DocumentType;
+  chunkCount: number;
+  lastIngestion: string;
+  sizeBytes: number;
+}

@@ -489,6 +489,75 @@ export async function registerManagerRoutes(
   });
 
   /**
+   * GET /api/knowledgebases/:name/documents
+   * List all documents in a knowledge base
+   */
+  fastify.get<{ Params: { name: string } }>(
+    '/api/knowledgebases/:name/documents',
+    async (request: FastifyRequest<{ Params: { name: string } }>, reply: FastifyReply) => {
+      const { name } = request.params;
+      
+      try {
+        logger.info('GET /api/knowledgebases/:name/documents', { name });
+        
+        const documents = await knowledgeBaseService.listDocuments(name);
+        
+        return reply.send({
+          documents,
+          knowledgeBaseName: name,
+          totalDocuments: documents.length
+        });
+      } catch (error) {
+        logger.error('Failed to list documents', error instanceof Error ? error : new Error(String(error)), { name });
+        return reply.status(500).send({
+          error: `Failed to list documents: ${error instanceof Error ? error.message : String(error)}`
+        });
+      }
+    }
+  );
+
+  /**
+   * DELETE /api/knowledgebases/:name/documents
+   * Delete a specific document from a knowledge base
+   */
+  fastify.delete<{ Params: { name: string }; Body: { filePath: string } }>(
+    '/api/knowledgebases/:name/documents',
+    async (request: FastifyRequest<{ Params: { name: string }; Body: { filePath: string } }>, reply: FastifyReply) => {
+      const { name } = request.params;
+      const { filePath } = request.body;
+      
+      try {
+        logger.info('DELETE /api/knowledgebases/:name/documents', { name, filePath });
+        
+        if (!filePath) {
+          return reply.status(400).send({
+            error: 'File path is required'
+          });
+        }
+        
+        const deletedCount = await knowledgeBaseService.deleteDocument(name, filePath);
+        
+        // Clear search cache after deletion
+        searchService.clearCache();
+        
+        logger.info('Document deleted successfully', { name, filePath, deletedCount });
+        
+        return reply.send({
+          success: true,
+          deletedChunks: deletedCount,
+          filePath,
+          knowledgeBaseName: name
+        });
+      } catch (error) {
+        logger.error('Failed to delete document', error instanceof Error ? error : new Error(String(error)), { name, filePath });
+        return reply.status(500).send({
+          error: `Failed to delete document: ${error instanceof Error ? error.message : String(error)}`
+        });
+      }
+    }
+  );
+
+  /**
    * POST /api/upload/file
    * Upload single file to knowledge base
    */
