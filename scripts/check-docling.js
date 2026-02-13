@@ -64,22 +64,31 @@ function isPythonVersionValid(versionString) {
  */
 function checkDoclingInstalled() {
   try {
-    // Try python3 first
-    execSync('python3 -m docling --version', { 
+    // Try docling CLI directly (preferred method)
+    execSync('docling --version', { 
       encoding: 'utf8', 
       stdio: ['pipe', 'pipe', 'pipe'] 
     });
     return true;
   } catch {
     try {
-      // Fallback to python
-      execSync('python -m docling --version', { 
+      // Try python3 -m docling
+      execSync('python3 -m docling --version', { 
         encoding: 'utf8', 
         stdio: ['pipe', 'pipe', 'pipe'] 
       });
       return true;
     } catch {
-      return false;
+      try {
+        // Fallback to python -m docling
+        execSync('python -m docling --version', { 
+          encoding: 'utf8', 
+          stdio: ['pipe', 'pipe', 'pipe'] 
+        });
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 }

@@ -92,16 +92,16 @@ export async function registerManagerRoutes(
    */
   fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const codebases = await knowledgeBaseService.listKnowledgeBases();
+      const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
       
-      logger.debug('Knowledge bases loaded', { count: codebases.length, codebases: codebases.map(c => ({ name: c.name, fileCount: c.fileCount, lastIngestion: c.lastIngestion })) });
+      logger.debug('Knowledge bases loaded', { count: knowledgeBases.length, knowledgeBases: knowledgeBases.map(c => ({ name: c.name, fileCount: c.fileCount, lastIngestion: c.lastIngestion })) });
       
       // Get flash messages using reply.flash()
       const flashMessages = (reply as any).flash();
       
       return reply.view('index.hbs', {
         title: 'Dashboard',
-        codebases,
+        knowledgeBases,
         message: flashMessages?.message?.[0],
         messageType: flashMessages?.messageType?.[0]
       });
@@ -109,7 +109,7 @@ export async function registerManagerRoutes(
       logger.error('Failed to load knowledge bases', error instanceof Error ? error : new Error(String(error)));
       return reply.view('index.hbs', {
         title: 'Dashboard',
-        codebases: [],
+        knowledgeBases: [],
         message: 'Failed to load knowledge bases',
         messageType: 'error'
       });
@@ -127,11 +127,11 @@ export async function registerManagerRoutes(
       
       try {
         const stats = await knowledgeBaseService.getKnowledgeBaseStats(name);
-        const codebases = await knowledgeBaseService.listKnowledgeBases();
+        const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
         
         return reply.view('index.hbs', {
           title: name,
-          codebases,
+          knowledgeBases,
           selectedCodebase: name,
           stats
         });
@@ -170,11 +170,11 @@ export async function registerManagerRoutes(
         excludeTests: excludeTests === 'true',
       });
       
-      const codebases = await knowledgeBaseService.listKnowledgeBases();
+      const knowledgeBases = await knowledgeBaseService.listKnowledgeBases();
       
       return reply.view('index.hbs', {
         title: 'Search Results',
-        codebases,
+        knowledgeBases,
         searchResults: results.results,
         searchQuery: query,
         maxResults: Number(maxResults),
