@@ -622,8 +622,8 @@ These tags enable filtering in search results.
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Entry Points                             │
+┌────────────────────────────────────────────────────────────┐
+│                     Entry Points                           │
 ├──────────────┬──────────────────┬──────────────────────────┤
 │  MCP Server  │  Ingestion CLI   │     Manager UI           │
 │  (stdio)     │  (command-line)  │  (web interface)         │
@@ -631,7 +631,7 @@ These tags enable filtering in search results.
        │                │                    │
        │                │                    │
 ┌──────▼────────────────▼────────────────────▼───────────────┐
-│                   Core Services                             │
+│                   Core Services                            │
 ├─────────────┬──────────────┬──────────────┬────────────────┤
 │ Knowledge   │    Search    │  Ingestion   │   Embedding    │
 │   Base      │   Service    │   Service    │    Service     │
@@ -640,7 +640,7 @@ These tags enable filtering in search results.
        │             │              │                │
        │             │              │                │
 ┌──────▼─────────────▼──────────────▼────────────────▼───────┐
-│                   Storage & External                        │
+│                   Storage & External                       │
 ├──────────────┬──────────────────┬─────────────────────────┤
 │   LanceDB    │  Docling SDK     │  Hugging Face           │
 │ (Vector DB)  │  (Doc Convert)   │  (Embeddings)           │
