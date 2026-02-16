@@ -67,7 +67,8 @@ export class DocumentConverterService {
       await mkdir(this.outputDir, { recursive: true });
       
       // Build docling CLI command
-      const baseNameWithoutExt = basename(fileName, extname(fileName));
+      // Use the full input path's basename (includes UUID for temp files)
+      const baseNameWithoutExt = basename(filePath, extname(filePath));
       const args = [
         '--ocr',  // Enable OCR for scanned PDFs
         '--image-export-mode', 'placeholder',  // Use placeholders instead of base64 images
@@ -84,6 +85,21 @@ export class DocumentConverterService {
       
       if (exitCode !== 0) {
         throw new Error(`Docling CLI failed with exit code ${exitCode}: ${stderr}`);
+      }
+      
+      // Check stderr for conversion failures even with exit code 0
+      if (stderr.includes('failed to convert')) {
+        logger.warn('Docling reported conversion failure', { stderr: stderr.substring(stderr.length - 500) });
+        throw new Error('Docling failed to convert document. The PDF may be corrupted or use unsupported features.');
+      }
+      
+      // List files in output directory to see what was actually created
+      try {
+        const { readdir } = await import('node:fs/promises');
+        const files = await readdir(this.outputDir);
+        logger.info('Files in output directory after docling', { outputDir: this.outputDir, files: files.slice(0, 10) });
+      } catch (error) {
+        logger.warn('Could not list output directory', { outputDir: this.outputDir, error: error instanceof Error ? error.message : 'Unknown' });
       }
       
       // Read the generated markdown and JSON files
@@ -128,6 +144,12 @@ export class DocumentConverterService {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
+      
+      // If docling explicitly failed to convert, don't try fallback
+      if (error instanceof Error && error.message.includes('failed to convert')) {
+        logger.error('Docling conversion failed', error, { filePath, duration });
+        throw error;
+      }
       
       if (error instanceof Error && error.message.includes('timed out')) {
         logger.warn('Document conversion timed out, attempting fallback', { filePath, duration });
@@ -192,7 +214,8 @@ export class DocumentConverterService {
         if (!timedOut) {
           logger.info('Docling CLI process closed', { exitCode: code, stderrLength: stderr.length, stdoutLength: stdout.length });
           if (stderr) {
-            logger.debug('Docling CLI stderr output', { stderr: stderr.substring(0, 500) });
+            // Log more stderr to diagnose issues
+            logger.info('Docling CLI stderr output', { stderr: stderr.substring(stderr.length - 1000) });
           }
           resolve({
             stdout,
