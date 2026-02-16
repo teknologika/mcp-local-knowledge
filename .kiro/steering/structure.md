@@ -67,7 +67,7 @@ Web interface components:
 
 - `.gitignore` - Git ignore patterns (node_modules, dist, local data)
 - `package.json` - npm package manifest with name `@teknologika/mcp-local-knowledge`
-- `tsconfig.json` - TypeScript compiler configuration for Node.js 23+
+- `tsconfig.json` - TypeScript compiler configuration for Node.js 22+
 - `.eslintrc.json` - ESLint rules for code quality
 - `vitest.config.ts` - Test runner configuration with coverage thresholds
 - `.env.example` - Example environment variables

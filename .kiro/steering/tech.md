@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides comprehensive guidance when working with Node.js 23 applications.
+This file provides comprehensive guidance when working with Node.js 22+ applications.
 
 ## Core Development Philosophy
 
@@ -68,16 +68,7 @@ rg --files -g "*.js"
 ),
 ```
 
-## 🚀 Node.js 23 Key Features
-
-### Native TypeScript Support
-Node.js 23.6+ now runs TypeScript files natively without additional configuration:
-```bash
-# Direct execution without transpilation
-node index.ts
-
-# No need for ts-node or tsx
-```
+## 🚀 Node.js 22+ Key Features
 
 ### Performance Features
 - **Virtual Threads**: Leverage Java 21-style virtual threads for better concurrency
@@ -98,7 +89,7 @@ node index.ts
 ```json
 {
   "engines": {
-    "node": ">=23.0.0",
+    "node": ">=22.0.0",
     "npm": ">=10.0.0"
   },
   "scripts": {
@@ -438,7 +429,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 ### Dockerfile
 ```dockerfile
-FROM node:23-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init

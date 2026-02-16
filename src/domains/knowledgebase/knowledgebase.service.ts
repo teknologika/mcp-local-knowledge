@@ -102,8 +102,9 @@ export class KnowledgeBaseService {
           continue;
         }
 
-        // Convert underscores back to hyphens for display name
-        const knowledgeBaseName = match[1].replace(/_/g, '-');
+        // Use the sanitized name as-is (don't convert underscores back)
+        // This ensures consistency between ingestion and retrieval
+        const knowledgeBaseName = match[1];
         
         // Open table directly by name
         const lanceTable = await this.lanceClient.getConnection().openTable(table.name);
@@ -485,7 +486,12 @@ export class KnowledgeBaseService {
 
       const table = await this.lanceClient.getOrCreateTable(knowledgeBaseName);
       if (!table) {
-        throw new KnowledgeBaseError(`Knowledge base '${knowledgeBaseName}' not found`);
+        // Get list of available knowledge bases for better error message
+        const availableKBs = await this.listKnowledgeBases();
+        const kbNames = availableKBs.map(kb => kb.name).join(', ');
+        throw new KnowledgeBaseError(
+          `Knowledge base '${knowledgeBaseName}' not found. Available knowledge bases: ${kbNames || '(none)'}`
+        );
       }
 
       // Query all rows and aggregate by filePath

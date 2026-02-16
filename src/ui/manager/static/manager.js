@@ -1088,7 +1088,8 @@ async function toggleDocuments(event, knowledgeBaseName) {
                 const response = await fetch(`/api/knowledgebases/${encodeURIComponent(knowledgeBaseName)}/documents`);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load documents');
+                    const errorText = await response.text();
+                    throw new Error(`Failed to load documents (${response.status}): ${errorText}`);
                 }
                 
                 const data = await response.json();
@@ -1105,8 +1106,19 @@ async function toggleDocuments(event, knowledgeBaseName) {
                     const ext = '.' + doc.filePath.split('.').pop().toLowerCase();
                     const iconClass = getFileIconClass(ext);
                     const sizeStr = formatFileSize(doc.sizeBytes);
-                    const date = new Date(doc.lastIngestion);
-                    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    
+                    // Handle potentially invalid dates
+                    let dateStr = 'Unknown date';
+                    try {
+                        if (doc.lastIngestion) {
+                            const date = new Date(doc.lastIngestion);
+                            if (!isNaN(date.getTime())) {
+                                dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Invalid date for document:', doc.filePath, doc.lastIngestion);
+                    }
                     
                     return `
                         <div class="document-item">
@@ -1142,7 +1154,8 @@ async function toggleDocuments(event, knowledgeBaseName) {
             } catch (error) {
                 console.error('Error loading documents:', error);
                 documentsLoading.style.display = 'none';
-                documentsList.innerHTML = '<div class="empty-state" style="padding: 2rem; text-align: center;"><p style="color: var(--danger);">Error loading documents</p></div>';
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                documentsList.innerHTML = `<div class="empty-state" style="padding: 2rem; text-align: center;"><p style="color: var(--danger);">Error loading documents: ${errorMessage}</p></div>`;
             }
         }
     }

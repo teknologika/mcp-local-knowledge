@@ -838,9 +838,34 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 # Check logs for errors
 ```
 
+#### 7. "Knowledge base not found" after ingestion
+
+**Problem:** Knowledge base name contains special characters that were sanitized.
+
+**Explanation:** Knowledge base names are sanitized to ensure compatibility with the database. Special characters (spaces, hyphens, etc.) are replaced with underscores.
+
+**Examples:**
+- `Cloud Forge PRFAQ` → `Cloud_Forge_PRFAQ`
+- `my-project-docs` → `my_project_docs`
+- `Q1 2024 Reports` → `Q1_2024_Reports`
+
+**Solution:**
+```bash
+# Check what name was actually created
+mcp-knowledge-manager
+# Or use the debug script
+node scripts/debug-kb.js
+
+# Use the sanitized name when searching
+# If you ingested with: --name "Cloud Forge PRFAQ"
+# Use in MCP: Cloud_Forge_PRFAQ
+```
+
+**Note:** The CLI now displays the sanitized name during ingestion if it differs from your input.
+
 ### Docling-Specific Issues
 
-#### 7. "Docling not found" or "docling-sdk is not installed"
+#### 8. "Docling not found" or "docling-sdk is not installed"
 
 **Problem:** Python Docling is not installed or not in PATH.
 

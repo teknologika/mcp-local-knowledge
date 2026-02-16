@@ -97,7 +97,14 @@ async function main() {
     const config = loadConfig(options.config);
     const logger = createLogger(config.logging.level);
 
+    // Show sanitized name if it differs from input
+    const sanitizedName = options.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const nameChanged = sanitizedName !== options.name;
+
     console.log(`\nIngesting knowledge base: ${options.name}`);
+    if (nameChanged) {
+      console.log(`Sanitized name: ${sanitizedName} (special characters replaced with underscores)`);
+    }
     console.log(`Path: ${knowledgeBasePath}`);
     console.log(`Type: ${isFile ? 'Single file' : 'Directory'}`);
     console.log(`Supported formats: PDF, DOCX, PPTX, XLSX, HTML, Markdown, Text, Audio`);
